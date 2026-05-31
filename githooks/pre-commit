@@ -13,4 +13,9 @@ if [ -n "$blocked" ]; then
   echo "  把它们加进 .gitignore（确实必要才用 --no-verify）。" >&2
   exit 1
 fi
+
+# 入口文件行数治理（单一规则源；存在才查）
+if [ -r "$ROOT/scripts/verify-governance.sh" ]; then
+  bash "$ROOT/scripts/verify-governance.sh" >&2 || exit 1
+fi
 exit 0

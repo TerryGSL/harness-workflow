@@ -43,5 +43,10 @@ if [ -n "$secrets" ]; then
   fail=1
 fi
 
+# 4. 入口文件行数治理(单一规则源,与 pre-commit 同调)。CI 已 checkout,直接对工作树跑。
+if [ -x "$DIR/verify-governance.sh" ]; then
+  ( cd "$(git rev-parse --show-toplevel)" && bash scripts/verify-governance.sh ) || fail=1
+fi
+
 [ "$fail" -eq 0 ] && echo "ci-gate：通过"
 exit "$fail"
