@@ -1,2 +1,2 @@
 # Claude Code
-This project uses AGENTS.md as the single source of truth. See ./AGENTS.md
+本项目以 AGENTS.md 为唯一事实源。见 ./AGENTS.md

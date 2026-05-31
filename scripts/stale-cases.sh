@@ -13,7 +13,7 @@ find "$DIR" -name '*.md' -type f 2>/dev/null | while read -r f; do
   if [ "$age_days" -gt "$THRESHOLD_DAYS" ]; then
     slug=$(basename "$f" .md)
     if ! git log --since="${THRESHOLD_DAYS} days ago" --grep="$slug" --oneline 2>/dev/null | grep -q .; then
-      echo "stale: $f (${age_days}d) — review or move to docs/memory/archive/"
+      echo "陈旧 case: $f (${age_days}天) —— 复查或移到 docs/memory/archive/"
     fi
   fi
 done

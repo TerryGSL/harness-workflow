@@ -8,9 +8,9 @@ SECRET_RE='(^|/)\.env($|\.)|(^|/)secrets?/'   # conservative fallback if lib mis
 staged=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
 blocked=$(printf '%s\n' "$staged" | grep -E "$SECRET_RE" || true)
 if [ -n "$blocked" ]; then
-  echo "✗ pre-commit: refusing to commit secret/credential files:" >&2
+  echo "✗ pre-commit：拒绝提交密钥/凭证文件：" >&2
   printf '%s\n' "$blocked" | sed 's/^/    /' >&2
-  echo "  Add them to .gitignore (or use --no-verify only if you are certain)." >&2
+  echo "  把它们加进 .gitignore（确实必要才用 --no-verify）。" >&2
   exit 1
 fi
 exit 0

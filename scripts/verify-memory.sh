@@ -28,11 +28,11 @@ if grep -qiE "$MEMORY_TRAILER_RE" "$MSG_FILE"; then
 fi
 
 cat >&2 <<'EOF'
-✗ memory gate: this commit touches code/schema/tests but records no memory.
-  Do ONE of:
-    • add docs/memory/cases/<date>-<slug>.md      (bug fix / non-trivial gotcha)
-    • add docs/memory/decisions/<date>-<slug>.md  (non-obvious architecture choice)
-    • add a commit-message trailer:                Memory: none   (or: trivial)
-  The trailer is recorded in git history — laziness leaves a trace.
+✗ memory 门禁：本次提交动了代码/schema/测试，但没记录任何 memory。
+  三选一：
+    • 加 docs/memory/cases/<日期>-<slug>.md      （修了 bug / 非平凡的坑）
+    • 加 docs/memory/decisions/<日期>-<slug>.md  （非显然的架构取舍）
+    • commit 信息里加一行 trailer：               Memory: none   （或：trivial）
+  trailer 会记进 git 历史——偷懒留痕。
 EOF
 exit 1

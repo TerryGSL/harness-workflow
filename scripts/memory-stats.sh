@@ -17,7 +17,7 @@ EOF
 [ "$cnt" -eq 0 ] && exit 0
 pct=$(( none * 100 / cnt ))
 if [ "$pct" -ge 80 ] && [ "$cnt" -ge 10 ]; then
-  echo "ℹ memory: ${none}/${cnt} (${pct}%) of recent commits used 'Memory: none/trivial'." >&2
-  echo "  If you've been fixing real bugs or making non-obvious choices, write a case/decision." >&2
+  echo "ℹ memory：最近 ${cnt} 个 commit 里有 ${none} 个（${pct}%）用了 'Memory: none/trivial'。" >&2
+  echo "  如果你在修真 bug 或做非显然取舍，写个 case/decision 吧。" >&2
 fi
 exit 0

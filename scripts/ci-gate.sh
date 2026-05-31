@@ -21,7 +21,7 @@ fail=0
 
 # 1. Hook files must still exist at HEAD (a commit cannot quietly remove the gate).
 for f in .githooks/pre-commit .githooks/commit-msg .githooks/pre-push scripts/verify-memory.sh scripts/gate-lib.sh; do
-  git cat-file -e "${HEAD}:$f" 2>/dev/null || { echo "✗ ci-gate: required file missing at HEAD: $f"; fail=1; }
+  git cat-file -e "${HEAD}:$f" 2>/dev/null || { echo "✗ ci-gate：HEAD 缺少必需文件：$f"; fail=1; }
 done
 
 # 2. Per-commit memory rule.
@@ -32,16 +32,16 @@ for c in $(git rev-list "$range" 2>/dev/null); do
   mem=$(printf '%s\n' "$files" | grep -E "$MEMORY_FILE_RE" || true)
   [ -n "$mem" ] && continue
   if git log -1 --format=%B "$c" | grep -qiE "$MEMORY_TRAILER_RE"; then continue; fi
-  echo "✗ ci-gate: commit ${c:0:8} touches code but records no memory (no case/decision, no 'Memory:' trailer)"
+  echo "✗ ci-gate：commit ${c:0:8} 动了代码但没记 memory（无 case/decision，也无 'Memory:' trailer）"
   fail=1
 done
 
 # 3. No secret-like files tracked at HEAD.
 secrets=$(git ls-tree -r --name-only "$HEAD" 2>/dev/null | grep -E "$SECRET_RE" || true)
 if [ -n "$secrets" ]; then
-  echo "✗ ci-gate: secret-like files are tracked:"; printf '%s\n' "$secrets" | sed 's/^/    /'
+  echo "✗ ci-gate：仓库里 track 了密钥类文件："; printf '%s\n' "$secrets" | sed 's/^/    /'
   fail=1
 fi
 
-[ "$fail" -eq 0 ] && echo "ci-gate: OK"
+[ "$fail" -eq 0 ] && echo "ci-gate：通过"
 exit "$fail"

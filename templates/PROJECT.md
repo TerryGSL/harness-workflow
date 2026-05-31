@@ -1,15 +1,15 @@
-# PROJECT (pointer map, ≤100 lines — pointers, not content)
+# PROJECT（指针地图，≤100 行 —— 放指针，不放内容）
 
-One-line purpose: <TODO>
+一句话定位：<TODO>
 
-## Module map
-- <module-a>/  → one-line responsibility
-- <module-b>/  → one-line responsibility
+## 模块地图
+- <模块-a>/  → 一句话职责
+- <模块-b>/  → 一句话职责
 
-## Key pointers
-- API schema: <path>
-- DB schema:  <path>
-- Entry point: <path>
-- Tests:       <path>
+## 关键指针
+- API schema: <路径>
+- DB schema:  <路径>
+- 入口:        <路径>
+- 测试:        <路径>
 
-> When this grows past 3-5 subsystems, split out docs/ARCHITECTURE.md. Not before.
+> 当子系统超过 3-5 个再拆出 docs/ARCHITECTURE.md，不要提前拆。

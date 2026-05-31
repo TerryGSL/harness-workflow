@@ -7,7 +7,7 @@ run_init() { local d="$1"; ( cd "$d" && bash "$INIT" >/dev/null 2>&1 ); }
 scaffolds_files() {
   local d; d=$(mktarget); run_init "$d"
   local ok=0
-  for f in AGENTS.md CLAUDE.md docs/PROJECT.md \
+  for f in AGENTS.md CLAUDE.md docs/PROJECT.md docs/WORKFLOW.md \
            .aider.conf.yml .cursor/rules/harness.mdc .github/workflows/harness-gate.yml \
            scripts/gate-lib.sh scripts/verify-memory.sh scripts/ci-gate.sh \
            scripts/stale-cases.sh scripts/memory-stats.sh \

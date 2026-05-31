@@ -8,7 +8,7 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
   branch=${remote_ref#refs/heads/}
   for p in $protected; do
     if [ "$branch" = "$p" ]; then
-      echo "✗ pre-push: direct push to '$p' is blocked. Open a PR from a feature branch." >&2
+      echo "✗ pre-push：禁止直推 '$p'。请从 feature 分支开 PR。" >&2
       exit 1
     fi
   done
@@ -28,7 +28,7 @@ run_tests() {
   if [ -f Cargo.toml ]; then echo "cargo test"; cargo test --quiet; return $?; fi
   return 0   # no recognizable test command -> don't block
 }
-if ! run_tests; then echo "✗ pre-push: tests failed." >&2; exit 1; fi
+if ! run_tests; then echo "✗ pre-push：测试未通过。" >&2; exit 1; fi
 
 # Soft reminders (never block).
 [ -x "$ROOT/scripts/stale-cases.sh" ]  && "$ROOT/scripts/stale-cases.sh"  || true
