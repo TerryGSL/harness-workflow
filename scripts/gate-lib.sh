@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# gate-lib.sh — shared patterns for the memory gate and the secret gate.
+# Sourced by scripts/verify-memory.sh, scripts/ci-gate.sh, and .githooks/pre-commit
+# so the client hook and the server-side CI check can never drift apart.
+
+# Paths/files considered "significant" enough to require a memory record.
+SIGNIFICANT_RE='^(src/|app/|lib/|libs/|pkg/|packages/|server/|client/|cmd/|web/|components/|pages/|routes/|api/|scripts/|tests?/|migrations?/|db/)|\.(sql|prisma|graphql|proto)$|schema|\.(test|spec)\.|^[^/]+\.(py|go|rs|rb|java|kt|ts|js|tsx|jsx)$|(^|/)(package\.json|pyproject\.toml|go\.mod|Cargo\.toml|Dockerfile|Makefile)$|^\.github/workflows/'
+
+# Paths/files that must never be committed (secrets / credentials).
+SECRET_RE='(^|/)\.env($|\.)|(^|/)secrets?/|(^|/)\.npmrc$|(^|/)\.pypirc$|(^|/)id_(rsa|ed25519|ecdsa)($|\.)|\.(pem|p12|pfx|key|keystore)$|(^|/)(credentials|\.aws/credentials)($|\.)|(^|/)\.netrc$'
+
+# A commit message satisfies the memory escape hatch if it has a Memory: trailer.
+MEMORY_TRAILER_RE='^Memory:[[:space:]]*[^[:space:]]+'
+# A changed-file list satisfies the gate if it adds/edits a memory artifact.
+MEMORY_FILE_RE='^docs/memory/(cases|decisions)/.+\.md$'

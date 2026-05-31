@@ -1,0 +1,9 @@
+---
+description: Project harness — read AGENTS.md as the source of truth
+alwaysApply: true
+---
+
+This project uses AGENTS.md as the single source of truth for commands, forbidden
+zones, commit boundaries, and when to write memory. Read ./AGENTS.md before acting.
+Red lines (secrets, no-push-to-main, memory on code changes) are enforced by git hooks
+and CI, not by this rule.

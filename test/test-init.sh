@@ -8,9 +8,11 @@ scaffolds_files() {
   local d; d=$(mktarget); run_init "$d"
   local ok=0
   for f in AGENTS.md CLAUDE.md docs/PROJECT.md \
-           scripts/verify-memory.sh \
+           .aider.conf.yml .cursor/rules/harness.mdc .github/workflows/harness-gate.yml \
+           scripts/gate-lib.sh scripts/verify-memory.sh scripts/ci-gate.sh \
+           scripts/stale-cases.sh scripts/memory-stats.sh \
            .githooks/pre-commit .githooks/commit-msg .githooks/pre-push; do
-    [ -e "$d/$f" ] || ok=1
+    [ -e "$d/$f" ] || { echo "missing $f" >&2; ok=1; }
   done
   [ -d "$d/docs/memory/cases" ] && [ -d "$d/docs/memory/decisions" ] || ok=1
   rm -rf "$d"; return $ok
@@ -28,6 +30,12 @@ sets_hookspath() {
   local v; v=$(cd "$d" && git config core.hooksPath)
   rm -rf "$d"; [ "$v" = ".githooks" ]
 }
+does_not_clobber_existing_hookspath() {
+  local d; d=$(mktarget); ( cd "$d" && git config core.hooksPath .myhooks )
+  run_init "$d"
+  local v; v=$(cd "$d" && git config core.hooksPath)
+  rm -rf "$d"; [ "$v" = ".myhooks" ]   # ours must NOT overwrite
+}
 is_idempotent() {  # user edits to AGENTS.md survive re-init
   local d; d=$(mktarget); run_init "$d"
   echo "MY EDIT" >> "$d/AGENTS.md"; run_init "$d"
@@ -37,6 +45,7 @@ is_idempotent() {  # user edits to AGENTS.md survive re-init
 
 assert "init scaffolds all files + memory dirs" scaffolds_files
 assert "init omits optional files (WORK/.ai-mode/archive)" omits_optional_files
-assert "init sets core.hooksPath=.githooks" sets_hookspath
+assert "init sets core.hooksPath=.githooks on clean repo" sets_hookspath
+assert "init does NOT clobber an existing core.hooksPath" does_not_clobber_existing_hookspath
 assert "init is idempotent (keeps user edits)" is_idempotent
 finish

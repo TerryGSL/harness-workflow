@@ -1,0 +1,2 @@
+# .aider.conf.yml — make Aider read AGENTS.md as always-on context.
+read: AGENTS.md

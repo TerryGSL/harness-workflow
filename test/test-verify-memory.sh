@@ -17,4 +17,9 @@ assert "src change WITH Memory: none trailer passes"  run_case $'feat: thing\n\n
 assert "src change WITH staged case passes"           run_case "fix: bug" src/a.ts docs/memory/cases/2026-05-31-x.md
 assert "docs-only change passes silently"             run_case "docs: tweak" README.md
 assert "schema change WITH trailer passes"            run_case $'feat\n\nMemory: trivial' db/schema.sql
+# broadened significant-path coverage (codex #4)
+refute "app/ change w/o memory is rejected"           run_case "feat" app/x.tsx
+refute "lib/ change w/o memory is rejected"           run_case "feat" lib/y.go
+refute "root *.py change w/o memory is rejected"      run_case "feat" main.py
+refute "package.json change w/o memory is rejected"   run_case "chore" package.json
 finish

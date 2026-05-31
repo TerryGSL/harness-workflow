@@ -17,6 +17,15 @@ pc_allows_normal() {
   git commit -q -m "docs" ; local rc=$?
   cd - >/dev/null; rm -rf "$d"; return $rc
 }
+# pre-commit: block private key (broadened secret pattern, codex #14) — needs gate-lib
+pc_blocks_private_key() {
+  local d; d=$(mktarget); cd "$d" || return 2
+  mkdir -p scripts; cp "$HW_ROOT/scripts/gate-lib.sh" scripts/gate-lib.sh
+  cp "$HW_ROOT/githooks/pre-commit" .git/hooks/pre-commit; chmod +x .git/hooks/pre-commit
+  echo "key" > id_rsa; git add id_rsa
+  git commit -q -m "oops" ; local rc=$?     # should be REJECTED
+  cd - >/dev/null; rm -rf "$d"; return $rc
+}
 # pre-push: block main
 pp_blocks_main() {
   local d; d=$(mktarget); cd "$d" || return 2
@@ -32,6 +41,7 @@ pp_allows_feature() {
 
 refute "pre-commit blocks .env" pc_blocks_env
 assert "pre-commit allows README" pc_allows_normal
+refute "pre-commit blocks private key (id_rsa)" pc_blocks_private_key
 refute "pre-push blocks push to main" pp_blocks_main
 assert "pre-push allows feature branch" pp_allows_feature
 finish

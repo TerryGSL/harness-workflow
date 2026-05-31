@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# pre-push: block direct push to protected branches, run tests, remind stale cases.
+# pre-push: block direct push to protected branches, run the project's tests
+# (best-effort across stacks), and surface soft reminders. Non-test failures never block.
 set -uo pipefail
 protected="main master"
 while read -r _local_ref _local_sha remote_ref _remote_sha; do
@@ -14,10 +15,22 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
 done
 
 ROOT=$(git rev-parse --show-toplevel)
-if [ -f "$ROOT/package.json" ] && grep -q '"test"' "$ROOT/package.json"; then
-  echo "pre-push: running npm test ..." >&2
-  ( cd "$ROOT" && npm test --silent ) || { echo "✗ pre-push: tests failed." >&2; exit 1; }
-fi
+cd "$ROOT"
 
-[ -x "$ROOT/scripts/stale-cases.sh" ] && "$ROOT/scripts/stale-cases.sh" || true
+# Best-effort test run across common stacks. Server-side CI (ci-gate) is the real gate.
+run_tests() {
+  if [ -f package.json ] && grep -q '"test"' package.json; then echo "npm test"; npm test --silent; return $?; fi
+  if [ -f Makefile ] && grep -qE '^test:' Makefile; then echo "make test"; make test; return $?; fi
+  if [ -f pyproject.toml ] || [ -f pytest.ini ] || [ -d tests ]; then
+    if command -v pytest >/dev/null 2>&1; then echo "pytest"; pytest -q; return $?; fi
+  fi
+  if [ -f go.mod ]; then echo "go test"; go test ./...; return $?; fi
+  if [ -f Cargo.toml ]; then echo "cargo test"; cargo test --quiet; return $?; fi
+  return 0   # no recognizable test command -> don't block
+}
+if ! run_tests; then echo "✗ pre-push: tests failed." >&2; exit 1; fi
+
+# Soft reminders (never block).
+[ -x "$ROOT/scripts/stale-cases.sh" ]  && "$ROOT/scripts/stale-cases.sh"  || true
+[ -x "$ROOT/scripts/memory-stats.sh" ] && "$ROOT/scripts/memory-stats.sh" || true
 exit 0

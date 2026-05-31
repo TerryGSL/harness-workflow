@@ -1,7 +1,9 @@
 # Agent Instructions
 
-> Single source of truth. CLAUDE.md is a 3-line stub pointing here.
-> Every line below must be grep/test/hook-verifiable. No values, no "should".
+> Single source of truth (Codex/Cursor/Aider read this directly; Claude via CLAUDE.md stub).
+> Prefer concrete, checkable constraints over vibes. The red lines below (secrets,
+> no-push-to-main, memory-on-code-change) are enforced by git hooks AND CI — not honor
+> system. The rest (Mode, anti-pattern log) is convention.
 
 ## Commands
 - build: <TODO>

@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
-# pre-commit: refuse to commit secret/env files.
+# pre-commit: refuse to commit secret/credential files. Pattern shared via gate-lib.sh.
 set -uo pipefail
+ROOT=$(git rev-parse --show-toplevel)
+SECRET_RE='(^|/)\.env($|\.)|(^|/)secrets?/'   # conservative fallback if lib missing
+[ -r "$ROOT/scripts/gate-lib.sh" ] && . "$ROOT/scripts/gate-lib.sh"
+
 staged=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
-blocked=$(printf '%s\n' "$staged" | grep -E '(^|/)\.env($|\.)|(^|/)secrets?/' || true)
+blocked=$(printf '%s\n' "$staged" | grep -E "$SECRET_RE" || true)
 if [ -n "$blocked" ]; then
-  echo "✗ pre-commit: refusing to commit secret/env files:" >&2
+  echo "✗ pre-commit: refusing to commit secret/credential files:" >&2
   printf '%s\n' "$blocked" | sed 's/^/    /' >&2
-  echo "  Add them to .gitignore." >&2
+  echo "  Add them to .gitignore (or use --no-verify only if you are certain)." >&2
   exit 1
 fi
 exit 0

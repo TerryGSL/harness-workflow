@@ -24,22 +24,35 @@ In Claude Code: say "接入 harness-workflow" and the init skill does the above.
 ## What you get (default)
 - `AGENTS.md` (≤60 lines, testable constraints + Mode line) · `CLAUDE.md` (3-line stub)
 - `docs/PROJECT.md` (pointer map) · `docs/memory/{cases,decisions}/`
-- git hooks: pre-commit (secrets) · commit-msg (memory gate w/ `Memory:` escape) · pre-push (no-main + tests + stale)
+- cross-tool pointers: `.aider.conf.yml` · `.cursor/rules/harness.mdc`
+- git hooks: pre-commit (secrets) · commit-msg (memory gate w/ `Memory:` escape) · pre-push (no-main + tests + soft reminders)
+- CI: `.github/workflows/harness-gate.yml` (server-side, unbypassable)
 
 Opt-in (not created by default): `WORK.md` (only when running parallel agents). Progress
 is `git log` — there is no state file to keep in sync.
 
+## How enforcement actually works (two layers, honest about each)
+1. **Client git hooks** — fast local friction. They fire for any tool that commits in
+   *this clone*. Caveat: `core.hooksPath` is **local git config**, so it does NOT travel
+   on clone, and `--no-verify` / GUI merges bypass it. Each clone must run `init.sh`
+   (or `git config core.hooksPath .githooks`) once to activate local hooks.
+2. **CI (`.github/workflows/harness-gate.yml`)** — the real, unbypassable invariant.
+   It re-checks the memory rule, secret rule, and that hook files still exist, on the
+   server, for every push/PR, regardless of tool, clone, or `--no-verify`. **This is why
+   you must commit + push the scaffold** — that's what makes the rules real everywhere.
+
 ## How it stays in sync across tools
-The harness lives in the repo, not in any tool's config. Clone the repo and you inherit:
-AGENTS.md (Codex/Cursor/Aider read it natively; Claude via the CLAUDE.md stub), the git
-hooks (via `core.hooksPath`, fire for every tool that commits), and docs/. Switch tools →
-nothing to reinstall. The Claude init skill is only for the first scaffold.
+The harness lives in the repo, not in any tool's config: `AGENTS.md` (Codex/Cursor/Aider
+read it natively — `.aider.conf.yml` and `.cursor/rules/harness.mdc` are scaffolded too;
+Claude via the `CLAUDE.md` stub), the hooks, the CI workflow, and `docs/`. Switch tools →
+clone, run `init.sh` once for local hooks; CI already enforces the red lines. The Claude
+init skill is only for the first scaffold.
 
 ## NON-GOALS (tripwire — if you reach for these, stop)
 No TS CLI. No profiles. No 17 contracts. No team-* agents. No 8-stage flow.
 No knowledge scanner. No JSON-schema gates. No session orchestrator. No runtime
-memory daemon. No state file (current.json/progress.md/STATE.json). Scaffold + git
-hooks only. When you want more, see "When to scale up".
+memory daemon. No state file (current.json/progress.md/STATE.json). Just scaffold +
+git hooks + a tiny CI gate. When you want more, see "When to scale up".
 
 ## When to scale up
 Outsource to unsupervised multi-hour agents → add Spec Kit. Multiple human collaborators
