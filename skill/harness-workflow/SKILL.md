@@ -27,7 +27,7 @@ description: 持续开发工作流。代码任务(做/加/修/改/实现/重构/
 回退提交(`Revert`/`Rollback`)豁免。memory 仍由 commit-msg 门要求(`Memory:` 或 case)。
 
 ## 分任务用 subagent(context/state 同步靠 artifacts,不靠传对话)
-派 subagent 跑并行任务时(复用 `superpowers:subagent-driven-development`):
+派 subagent 跑并行任务时(复用 `superpowers:subagent-driven-development`;并行多任务也可用 `task-dispatcher`):
 - **派发前(in)**:`bash scripts/brief.sh "<子任务>" "<文件边界>"` 生成自包含简报塞进 subagent prompt(含 state.json+近期 git+地图+相关 memory)。零上下文也对齐。
 - **边界**:one file one owner,各 subagent 文件不相交 + 各自分支;同文件必串行。
 - **回收(out)**:subagent 只回 结论+证据(改了啥/测试结果/决策),不回脏中间态。
