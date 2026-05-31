@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/run.sh" --lib
-S="$HW_ROOT/skill/harness-workflow/SKILL.md"
+S="$HW_ROOT/SKILL.md"
 name_ok(){ grep -qE '^name:[[:space:]]*harness-workflow' "$S"; }
 le_150(){ [ "$(wc -l < "$S")" -le 150 ]; }
 router(){ for k in trivial bug feature refactor; do grep -qi "$k" "$S"||return 1; done; }

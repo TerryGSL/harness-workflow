@@ -12,7 +12,7 @@ force_replaces_existing() {
   ln -s /tmp/old-somewhere "$home/.claude/skills/harness-workflow"
   ( cd "$HW_ROOT" && HOME="$home" bash install.sh --force >/dev/null 2>&1 )
   local rc=1
-  [ "$(readlink "$home/.claude/skills/harness-workflow")" = "$HW_ROOT/skill/harness-workflow" ] \
+  [ "$(readlink "$home/.claude/skills/harness-workflow")" = "$HW_ROOT" ] \
     && ls "$home/.claude/skills/"harness-workflow.legacy* >/dev/null 2>&1 && rc=0
   rm -rf "$home"; return $rc
 }

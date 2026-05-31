@@ -25,8 +25,7 @@ blocks_oversized_workflow() {
 
 blocks_oversized_skill() {
   local d; d=$(mktarget); cd "$d" || return 2
-  mkdir -p skill/harness-workflow
-  for i in $(seq 1 160); do echo "行 $i" >> skill/harness-workflow/SKILL.md; done
+  for i in $(seq 1 160); do echo "行 $i" >> SKILL.md; done
   bash "$VG" >/dev/null 2>&1; local rc=$?
   cd - >/dev/null; rm -rf "$d"; return $rc    # 应 != 0
 }

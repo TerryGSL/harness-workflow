@@ -15,6 +15,6 @@ check_max() { # <file> <max>
 check_max AGENTS.md 60
 check_max docs/PROJECT.md 100
 check_max docs/WORKFLOW.md 150
-check_max skill/harness-workflow/SKILL.md 150
+check_max SKILL.md 150
 [ "$fail" -eq 0 ] && echo "governance：通过"
 exit "$fail"

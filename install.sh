@@ -7,7 +7,7 @@
 #   bash install.sh --force      # 旧的 harness-workflow 若是软链则备份为 harness-workflow.legacy 再接管
 set -euo pipefail
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SKILL_SRC="$SRC/skill/harness-workflow"
+SKILL_SRC="$SRC"   # 整个 repo 就是 skill(SKILL.md 在根),symlink 它 → .claude 里能看到完整一套
 DEST_DIR="$HOME/.claude/skills"
 NAME="harness-workflow"; FORCE=0
 while [ "$#" -gt 0 ]; do case "$1" in

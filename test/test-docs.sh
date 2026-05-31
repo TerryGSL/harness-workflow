@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source "$(dirname "$0")/run.sh" --lib
-S="$HW_ROOT/skill/harness-workflow/SKILL.md"
+S="$HW_ROOT/SKILL.md"
 R="$HW_ROOT/README.md"
 skill_has_frontmatter_name() { grep -qE '^name:[[:space:]]*harness-workflow' "$S"; }
 skill_is_thin() { [ "$(wc -l < "$S")" -le 150 ]; }
