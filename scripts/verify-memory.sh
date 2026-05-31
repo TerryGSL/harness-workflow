@@ -17,6 +17,11 @@ fi
 staged=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
 [ -z "$staged" ] && exit 0
 
+# 回退/rollback 类提交豁免(首行或 trailer 命中) —— 紧急回滚不该被 memory 门禁卡。
+if head -1 "$MSG_FILE" | grep -qE "$MEMORY_EXEMPT_RE" || grep -qiE '^(Revert|Rollback):' "$MSG_FILE"; then
+  exit 0
+fi
+
 significant=$(printf '%s\n' "$staged" | grep -E "$SIGNIFICANT_RE" || true)
 [ -z "$significant" ] && exit 0
 

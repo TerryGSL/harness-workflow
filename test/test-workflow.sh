@@ -12,6 +12,9 @@ has_dod() { grep -qE '完成判据|DoD' "$W"; }
 has_independent_verify() { grep -q '独立验证' "$W"; }
 has_breaker() { grep -qE '熔断|连续失败' "$W"; }
 has_resume() { grep -q '续写' "$W"; }
+has_parallel() { grep -q '并行约定' "$W"; }
+has_session_head() { grep -qE 'session 头|git log' "$W"; }
+has_mem_governance() { grep -q '什么不该写' "$W"; }
 assert "WORKFLOW.md 有任务分级" has_grading
 assert "WORKFLOW.md 覆盖四档任务类型" has_four_types
 assert "WORKFLOW.md 含 TDD/失败测试" has_tdd
@@ -23,4 +26,7 @@ assert "WORKFLOW.md 有完成判据 DoD" has_dod
 assert "WORKFLOW.md 含独立验证" has_independent_verify
 assert "WORKFLOW.md 含熔断" has_breaker
 assert "WORKFLOW.md 含续写接力" has_resume
+assert "WORKFLOW.md 有并行约定" has_parallel
+assert "WORKFLOW.md 有 session 头三件套" has_session_head
+assert "WORKFLOW.md 有 memory 治理(什么不该写)" has_mem_governance
 finish

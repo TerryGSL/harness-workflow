@@ -3,7 +3,8 @@
 # (best-effort across stacks), and surface soft reminders. Non-test failures never block.
 set -uo pipefail
 protected="main master"
-while read -r _local_ref _local_sha remote_ref _remote_sha; do
+ZERO="0000000000000000000000000000000000000000"
+while read -r _local_ref local_sha remote_ref remote_sha; do
   [ -z "${remote_ref:-}" ] && continue
   branch=${remote_ref#refs/heads/}
   for p in $protected; do
@@ -12,6 +13,22 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
       exit 1
     fi
   done
+  # force-push / 改写历史检测：remote_sha 是真实 commit 且不是 local 的祖先 = 非快进(ask 三态)。
+  # remote_sha 为 40 个 0(新分支)或无效 sha → 不是 force-push,跳过。
+  if [ "$remote_sha" != "$ZERO" ] && git cat-file -e "${remote_sha}^{commit}" 2>/dev/null \
+     && [ -n "$local_sha" ] && [ "$local_sha" != "$ZERO" ] \
+     && ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+    echo "⚠ pre-push：检测到对 '$branch' 的 force-push / 改写历史(非快进)。" >&2
+    if [ "${HARNESS_CONFIRM:-}" = "1" ]; then
+      echo "  HARNESS_CONFIRM=1 已确认,放行。" >&2
+    elif [ -r /dev/tty ]; then
+      printf "  确认要 force-push 吗? [y/N] " >&2
+      read -r _ans < /dev/tty || _ans=""
+      case "$_ans" in y|Y|yes) : ;; *) echo "✗ 已取消。" >&2; exit 1 ;; esac
+    else
+      echo "  非交互环境:放行但请留意。要静默确认设 HARNESS_CONFIRM=1。" >&2
+    fi
+  fi
 done
 
 ROOT=$(git rev-parse --show-toplevel)

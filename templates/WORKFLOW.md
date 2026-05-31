@@ -56,10 +56,28 @@
 
 **熔断**：同一步骤（写测试 / 修复 / review 迭代）连续失败 ≥2 次 → 停下、记下已试过的失败假设、找用户。禁止无记忆重试原地烧 token。
 
+**故障分类处置**（错误路径就是主路径，提前想好）：
+- 被中断（半挂 edit）→ 要么 commit 要么 `git restore`，不留半挂。
+- 输出截断 → 从断点续写，不重头来、不复述。
+- 崩溃/换会话重启 → 按最近 commit 重建"上一轮在干什么"（git log 是 rollout）。
+- 连续失败 → 见上面熔断。
+
 ## degraded 不静默
 该用的工具缺了（没装 codex、某 skill 不在）→ **手工做，并明确告诉用户"这一步降级了"**，
 绝不假装做了。静默兜底比不做更糟。
 
-## 多 agent 并行
-git worktree + 分支天然隔离；只有 2+ agent 同 repo 并行时才建 `WORK.md`，开工前 append 一行 claim。
-单人单 agent 用不到。进度永远看 `git log`，没有状态文件要维护。
+## 多 agent 并行约定（1-3 agent；单人单 agent 跳过）
+多代理是"给不确定性分区"，不是提速。约定：
+- **边界不相交**：每个 agent 限定不重叠的文件/目录 + 各自 worktree + 各自分支。同一文件禁止两个 agent 并行（git merge 解文本冲突，解不了语义竞态）。
+- **子 agent 只回结论+证据**，不把中间脏状态/临时文件写回主线程。
+- **主 agent 必须 synthesize**：亲自读懂子结果，给出带"具体文件/行/改动"的下一步，禁止"based on your findings"式转发。
+- **收尾不留脏树**：失败/中止的并行任务，要么完整 commit，要么 `git restore` 回滚——不留半挂工作区。谁派发谁负责 cleanup。
+- 只有 2+ agent 同 repo 并行时才建 `WORK.md` 开工前 append claim。进度永远看 `git log`。
+
+## session 头三件套 + 上下文卫生
+- **接手任何 repo / 续做时先读**：`git log --oneline -20` + `docs/PROJECT.md` + 相关 `docs/memory/cases`。这是"换工具立即读懂状态"的人肉重建。
+- **长任务上下文卫生**：阶段产出落 docs（设计/计划写文件，别全留对话）；超长时主动 compact，并在 PROJECT.md 留指针，让下一段/下一个 agent 能接。
+
+## memory 治理（写侧由 commit-msg hook 强制，这里是判断 + 读侧）
+- **什么不该写**：trivial 改动不入 case；只有"可复用的坑"进 cases、"非显然取舍"进 decisions。别把 plan/task 当 memory。
+- **读侧先 verify**：据 case/decision 行动前先核对现状；与现状冲突时信任现状，并就地修正旧记忆（记忆会过期）。

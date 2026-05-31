@@ -11,5 +11,7 @@ SECRET_RE='(^|/)\.env($|\.)|(^|/)secrets?/|(^|/)\.npmrc$|(^|/)\.pypirc$|(^|/)id_
 
 # A commit message satisfies the memory escape hatch if it has a Memory: trailer.
 MEMORY_TRAILER_RE='^Memory:[[:space:]]*[^[:space:]]+'
+# Revert/rollback commits are exempt from the memory gate (回退类不被卡,避免诱导静默绕过).
+MEMORY_EXEMPT_RE='^(Revert|Rollback|revert)'
 # A changed-file list satisfies the gate if it adds/edits a memory artifact.
 MEMORY_FILE_RE='^docs/memory/(cases|decisions)/.+\.md$'

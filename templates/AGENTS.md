@@ -10,9 +10,10 @@
 - 测试: <TODO>
 - Lint: <TODO>
 
-## 禁区（.githooks 强制）
+## 禁区（.githooks 强制 + 此处点名，双层）
 - 绝不提交 .env / secrets/
 - 绝不直推 main/master（从 feature 分支开 PR）
+- 高危命令先停下确认，绝不顺手执行：force-push、reset --hard、rm -rf、改 .githooks/、curl|sh（不可逆/可绕过 hook，prompt 是第二道防线）
 
 ## Commit 边界
 - 测试不过不许 commit

@@ -22,4 +22,7 @@ refute "app/ change w/o memory is rejected"           run_case "feat" app/x.tsx
 refute "lib/ change w/o memory is rejected"           run_case "feat" lib/y.go
 refute "root *.py change w/o memory is rejected"      run_case "feat" main.py
 refute "package.json change w/o memory is rejected"   run_case "chore" package.json
+# revert/rollback 豁免 (codex #11 / round-4 ⑩)
+assert "Revert 提交豁免 memory 门禁"                   run_case 'Revert "feat: x"' src/a.ts
+assert "Rollback: trailer 豁免"                        run_case $'chore\n\nRollback: bad deploy' src/a.ts
 finish
