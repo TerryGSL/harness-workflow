@@ -25,7 +25,7 @@ mkdir -p docs/memory/cases docs/memory/decisions
 
 # --- tool-owned scripts + hooks (refreshed each init) ---
 mkdir -p scripts .githooks
-for s in gate-lib.sh verify-memory.sh verify-governance.sh ci-gate.sh stale-cases.sh memory-stats.sh doctor.sh; do
+for s in gate-lib.sh verify-memory.sh verify-governance.sh ci-gate.sh doctor.sh; do
   [ -f "$HW_SRC/scripts/$s" ] && cp "$HW_SRC/scripts/$s" "scripts/$s" || true
 done
 chmod +x scripts/*.sh

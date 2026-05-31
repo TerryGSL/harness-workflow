@@ -46,8 +46,4 @@ run_tests() {
   return 0   # no recognizable test command -> don't block
 }
 if ! run_tests; then echo "✗ pre-push：测试未通过。" >&2; exit 1; fi
-
-# Soft reminders (never block).
-[ -x "$ROOT/scripts/stale-cases.sh" ]  && "$ROOT/scripts/stale-cases.sh"  || true
-[ -x "$ROOT/scripts/memory-stats.sh" ] && "$ROOT/scripts/memory-stats.sh" || true
 exit 0

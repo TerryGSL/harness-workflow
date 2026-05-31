@@ -32,7 +32,7 @@ bash /path/to/harness-workflow/init.sh   # 幂等
 - `docs/WORKFLOW.md`（干活流程：任务分级 + 各档步骤）· `docs/PROJECT.md`（指针地图）
 - `docs/memory/{cases,decisions}/`
 - 跨工具指针：`.aider.conf.yml` · `.cursor/rules/harness.mdc`
-- git hooks：pre-commit（密钥）· commit-msg（memory 门禁，带 `Memory:` 逃生口）· pre-push（不推 main + 测试 + 软提醒）
+- git hooks：pre-commit（密钥）· commit-msg（memory 门禁，带 `Memory:` 逃生口）· pre-push（不推 main + 测试 + force-push 确认）
 - CI：`.github/workflows/harness-gate.yml`（服务端，不可绕过）
 
 可选（默认不建）：`WORK.md`（只在跑并行 agent 时）。进度就是 `git log`——没有状态文件要同步。
@@ -48,6 +48,22 @@ harness 长在 repo 里，不在工具配置里：`AGENTS.md`（Codex/Cursor/Aid
 没有 knowledge scanner。没有 JSON-schema 守门。没有 session orchestrator。没有运行时 memory 守护进程。
 没有状态文件（current.json/progress.md/STATE.json）。就是脚手架 + git hooks + CI + 一个轻量流程层。
 想要更多，见"何时升级回重型"。
+
+## 怎么迭代本 repo（漂移测试——防止它越长越胖、越胖越没用）
+
+这套东西最大的失败模式不是"功能不够"，是**越迭代越繁重，复杂到作者自己看不懂，
+而模型在实际使用中根本不读你的流程、一路漂移，最终全靠模型自己的能力**。
+所以本 repo 的迭代有一条**贡献门槛**：
+
+> **漂移测试**：要加任何东西，先问一句——"模型完全无视它，结果还会变吗？"
+> - **会**（因为它是机械强制的 git hook / CI）→ 这是**护栏**，可以加。
+> - **不会**（它只是靠模型自觉读的文字 / 打印的提醒）→ 这是**提示**，会漂移。
+>   提示的预算极小：默认**拒绝**，除非它是一行、高频、且你真会想念它。
+
+定位是 **护栏，不是编排（guardrails, not choreography）**：不脚本化"模型该怎么干活"
+（它会漂到自己的路子，那正是模型能力发挥处），只机械兜住少数必须成立的后果。
+外部 review / 读书只产出**候选**，不产出 commit——每条先过漂移测试，默认砍。
+入口文件行数由 `verify-governance.sh` 机械封顶（AGENTS≤60 / WORKFLOW≤150）当硬底线。
 
 ## 何时升级回重型
 任务外包给完全无人监督的多小时 agent → 加 Spec Kit。多个真人协作者 → 加 BMAD persona。
