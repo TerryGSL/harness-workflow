@@ -7,10 +7,10 @@ run_init() { local d="$1"; ( cd "$d" && bash "$INIT" >/dev/null 2>&1 ); }
 scaffolds_files() {
   local d; d=$(mktarget); run_init "$d"
   local ok=0
-  for f in AGENTS.md CLAUDE.md docs/PROJECT.md docs/WORKFLOW.md \
+  for f in AGENTS.md CLAUDE.md docs/PROJECT.md docs/WORKFLOW.md .harness/state.json \
            .aider.conf.yml .cursor/rules/harness.mdc .github/workflows/harness-gate.yml \
-           scripts/gate-lib.sh scripts/verify-memory.sh scripts/verify-governance.sh \
-           scripts/ci-gate.sh scripts/doctor.sh \
+           scripts/gate-lib.sh scripts/verify-memory.sh scripts/verify-evidence.sh scripts/verify-governance.sh \
+           scripts/ci-gate.sh scripts/doctor.sh scripts/state.sh \
            .githooks/pre-commit .githooks/commit-msg .githooks/pre-push; do
     [ -e "$d/$f" ] || { echo "missing $f" >&2; ok=1; }
   done

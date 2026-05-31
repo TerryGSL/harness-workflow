@@ -13,7 +13,7 @@ e2e_memory_gate_trailer_passes() {
   local d; d=$(mktarget); cd "$d" || return 2
   bash "$INIT" >/dev/null 2>&1
   mkdir -p src; echo "code" > src/a.ts; git add -A
-  git commit -q -m $'feat: add a\n\nMemory: none' ; local rc=$?   # should PASS
+  git commit -q -m $'feat: add a\n\nHarness-Type: trivial\nMemory: none' ; local rc=$?   # should PASS
   cd - >/dev/null; rm -rf "$d"; return $rc
 }
 e2e_secrets_blocked() {

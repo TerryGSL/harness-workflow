@@ -16,6 +16,7 @@ copy_if_absent "$HW_SRC/templates/AGENTS.md"   "AGENTS.md"
 copy_if_absent "$HW_SRC/templates/CLAUDE.md"   "CLAUDE.md"
 copy_if_absent "$HW_SRC/templates/PROJECT.md"  "docs/PROJECT.md"
 copy_if_absent "$HW_SRC/templates/WORKFLOW.md" "docs/WORKFLOW.md"
+copy_if_absent "$HW_SRC/templates/state.json.tmpl" ".harness/state.json"
 copy_if_absent "$HW_SRC/templates/aider.conf.yml"  ".aider.conf.yml"
 copy_if_absent "$HW_SRC/templates/cursor-harness.mdc" ".cursor/rules/harness.mdc"
 copy_if_absent "$HW_SRC/templates/workflow-harness-gate.yml" ".github/workflows/harness-gate.yml"
@@ -25,7 +26,7 @@ mkdir -p docs/memory/cases docs/memory/decisions
 
 # --- tool-owned scripts + hooks (refreshed each init) ---
 mkdir -p scripts .githooks
-for s in gate-lib.sh verify-memory.sh verify-governance.sh ci-gate.sh doctor.sh; do
+for s in gate-lib.sh verify-memory.sh verify-evidence.sh verify-governance.sh ci-gate.sh doctor.sh state.sh brief.sh; do
   [ -f "$HW_SRC/scripts/$s" ] && cp "$HW_SRC/scripts/$s" "scripts/$s" || true
 done
 chmod +x scripts/*.sh
