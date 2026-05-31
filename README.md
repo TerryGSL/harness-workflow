@@ -19,6 +19,14 @@ bash /path/to/harness-workflow/init.sh   # 幂等
 
 在 Claude Code 里：说"接入 harness-workflow"，init skill 会帮你做上面这些。
 
+## 安装指挥家 skill（让 Claude 能调用）
+```bash
+bash install.sh            # symlink skill 进 ~/.claude/skills(名字被占用则提示)
+bash install.sh --force    # 接管 harness-workflow 这个名字, 旧的备份为 .legacy
+bash install.sh --name X   # 装成别名, 不动旧的
+```
+skill 只是"大脑"(全局)；scripts/hooks/templates 由 `init.sh` 进每个项目。两者分离是有意的：换工具/换项目时大脑通用、护栏随 repo。
+
 ## 强制是怎么生效的（两层，对各自都说实话）
 1. **客户端 git hooks** —— 本地快速摩擦。在*这个 clone* 里对任何 commit 的工具生效。
    注意：`core.hooksPath` 是**本地 git config**，**不随 clone 走**，`--no-verify` / GUI 合并能绕过。
