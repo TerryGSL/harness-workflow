@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# commit-msg: delegate to the memory gate (has message + staged file list).
+set -uo pipefail
+ROOT=$(git rev-parse --show-toplevel)
+if [ -x "$ROOT/scripts/verify-memory.sh" ]; then
+  exec "$ROOT/scripts/verify-memory.sh" "$1"
+fi
+exit 0   # no script present -> do not block (e.g. repo not yet fully initialized)

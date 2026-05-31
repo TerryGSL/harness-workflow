@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# pre-push: block direct push to protected branches, run tests, remind stale cases.
+set -uo pipefail
+protected="main master"
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  [ -z "${remote_ref:-}" ] && continue
+  branch=${remote_ref#refs/heads/}
+  for p in $protected; do
+    if [ "$branch" = "$p" ]; then
+      echo "✗ pre-push: direct push to '$p' is blocked. Open a PR from a feature branch." >&2
+      exit 1
+    fi
+  done
+done
+
+ROOT=$(git rev-parse --show-toplevel)
+if [ -f "$ROOT/package.json" ] && grep -q '"test"' "$ROOT/package.json"; then
+  echo "pre-push: running npm test ..." >&2
+  ( cd "$ROOT" && npm test --silent ) || { echo "✗ pre-push: tests failed." >&2; exit 1; }
+fi
+
+[ -x "$ROOT/scripts/stale-cases.sh" ] && "$ROOT/scripts/stale-cases.sh" || true
+exit 0

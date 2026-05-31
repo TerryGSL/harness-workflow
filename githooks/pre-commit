@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# pre-commit: refuse to commit secret/env files.
+set -uo pipefail
+staged=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
+blocked=$(printf '%s\n' "$staged" | grep -E '(^|/)\.env($|\.)|(^|/)secrets?/' || true)
+if [ -n "$blocked" ]; then
+  echo "✗ pre-commit: refusing to commit secret/env files:" >&2
+  printf '%s\n' "$blocked" | sed 's/^/    /' >&2
+  echo "  Add them to .gitignore." >&2
+  exit 1
+fi
+exit 0
