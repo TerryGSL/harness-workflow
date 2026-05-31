@@ -41,6 +41,7 @@ bash /path/to/harness-workflow/init.sh   # 幂等
 harness 长在 repo 里，不在工具配置里：`AGENTS.md`（Codex/Cursor/Aider 原生读——也铺了
 `.aider.conf.yml` 和 `.cursor/rules/harness.mdc`；Claude 经 `CLAUDE.md` stub）、hooks、CI workflow、`docs/`。
 换工具 → clone，跑一次 `init.sh` 装本地 hook；CI 早就在强制红线了。Claude 的 init skill 只用于第一次脚手架。
+随时 `bash scripts/doctor.sh` 自检"换工具能否仅凭本 repo 冷启动接手"。
 
 ## 非目标（防退化绊线——伸手想加这些就停）
 没有 TS CLI。没有 profile。没有 17 contracts。没有 team-* agent。没有 8-stage 巨流程。

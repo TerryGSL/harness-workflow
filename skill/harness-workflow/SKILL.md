@@ -36,3 +36,5 @@ description: 精简开发 harness 的一次性脚手架（几个 markdown 文件
 
 然后停。你做完了。以后的任务（任何工具）直接用铺好的文件 + git hooks + CI + WORKFLOW.md，
 **不需要再调本 skill**。harness 长在 repo 里，不在工具里。
+
+> 自检：`bash scripts/doctor.sh` 检查"换工具/换 clone 能否仅凭本 repo 接手"。
