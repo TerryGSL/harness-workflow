@@ -24,16 +24,33 @@ for f in .githooks/pre-commit .githooks/commit-msg .githooks/pre-push scripts/ve
   git cat-file -e "${HEAD}:$f" 2>/dev/null || { echo "✗ ci-gate：HEAD 缺少必需文件：$f"; fail=1; }
 done
 
-# 2. Per-commit memory rule.
+# 2. Per-commit: memory 门 + 证据门(同一遍, 不早退以免漏检)。
 for c in $(git rev-list "$range" 2>/dev/null); do
   files=$(git diff-tree --no-commit-id --name-only -r "$c" 2>/dev/null || true)
   sig=$(printf '%s\n' "$files" | grep -E "$SIGNIFICANT_RE" || true)
   [ -z "$sig" ] && continue
+  msg=$(git log -1 --format=%B "$c")
+  printf '%s\n' "$msg" | head -1 | grep -qE "$MEMORY_EXEMPT_RE" && continue
+  printf '%s\n' "$msg" | grep -qiE '^(Revert|Rollback):' && continue
+  # memory 门
   mem=$(printf '%s\n' "$files" | grep -E "$MEMORY_FILE_RE" || true)
-  [ -n "$mem" ] && continue
-  if git log -1 --format=%B "$c" | grep -qiE "$MEMORY_TRAILER_RE"; then continue; fi
-  echo "✗ ci-gate：commit ${c:0:8} 动了代码但没记 memory（无 case/decision，也无 'Memory:' trailer）"
-  fail=1
+  if [ -z "$mem" ] && ! printf '%s\n' "$msg" | grep -qiE "$MEMORY_TRAILER_RE"; then
+    echo "✗ ci-gate：commit ${c:0:8} 动了代码但没记 memory（无 case/decision，也无 'Memory:' trailer）"; fail=1
+  fi
+  # 证据门
+  ctype=$(printf '%s\n' "$msg" | grep -iE "$HARNESS_TYPE_RE" | grep -oiE '(trivial|bug|feature|refactor)' | head -1 | tr 'A-Z' 'a-z')
+  if [ -z "$ctype" ]; then
+    echo "✗ ci-gate：commit ${c:0:8} 改了代码但未声明 Harness-Type"; fail=1
+  else case "$ctype" in
+    bug)
+      if printf '%s\n' "$files" | grep -qE "$TEST_FILE_RE"; then :
+      elif printf '%s\n' "$msg" | grep -qiE '^No-Repro:[[:space:]]*[^[:space:]]'; then :
+      else echo "✗ ci-gate：bug commit ${c:0:8} 无测试/无 No-Repro"; fail=1; fi ;;
+    feature)
+      printf '%s\n' "$msg" | grep -qiE '^Reviewed-by:[[:space:]]*[^[:space:]]' || { echo "✗ ci-gate：feature commit ${c:0:8} 缺 Reviewed-by"; fail=1; } ;;
+    refactor)
+      printf '%s\n' "$msg" | grep -qiE '^Behavior-Unchanged:[[:space:]]*(true|yes|是)' || { echo "✗ ci-gate：refactor commit ${c:0:8} 缺 Behavior-Unchanged"; fail=1; } ;;
+  esac; fi
 done
 
 # 3. No secret-like files tracked at HEAD.

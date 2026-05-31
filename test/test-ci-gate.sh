@@ -9,7 +9,7 @@ init_repo() {
   local d; d=$(mktemp -d)
   ( cd "$d" && git init -q && git config user.email t@t && git config user.name t \
     && bash "$INIT" >/dev/null 2>&1 \
-    && git add -A && git commit -q --no-verify -m $'chore: scaffold\n\nMemory: none' )
+    && git add -A && git commit -q --no-verify -m $'chore: scaffold\n\nHarness-Type: trivial\nMemory: none' )
   echo "$d"
 }
 run_ci() { ( cd "$1" && bash "$CI" >/dev/null 2>&1 ); }
@@ -24,8 +24,13 @@ ci_blocks_code_without_memory() {
 }
 ci_passes_code_with_trailer() {
   local d; d=$(init_repo)
-  ( cd "$d" && mkdir -p src && echo x > src/a.ts && git add -A && git commit -q --no-verify -m $'feat: code\n\nMemory: none' )
+  ( cd "$d" && mkdir -p src && echo x > src/a.ts && git add -A && git commit -q --no-verify -m $'feat: code\n\nHarness-Type: trivial\nMemory: none' )
   run_ci "$d"; local rc=$?; rm -rf "$d"; return $rc   # expect 0
+}
+ci_blocks_no_type() {
+  local d; d=$(init_repo)
+  ( cd "$d" && mkdir -p src && echo x > src/a.ts && git add -A && git commit -q --no-verify -m $'feat: code\n\nMemory: none' )
+  run_ci "$d"; local rc=$?; rm -rf "$d"; return $rc   # expect non-zero (memory ok, 但缺 Harness-Type)
 }
 ci_blocks_missing_hook() {
   local d; d=$(init_repo)
@@ -40,7 +45,8 @@ ci_blocks_tracked_secret() {
 
 assert "ci-gate passes a clean scaffold commit" ci_passes_clean
 refute "ci-gate blocks bypassed code commit w/o memory" ci_blocks_code_without_memory
-assert "ci-gate passes code commit with Memory: trailer" ci_passes_code_with_trailer
+assert "ci-gate passes code commit with Harness-Type + Memory" ci_passes_code_with_trailer
+refute "ci-gate 拦绕过的无 Harness-Type 代码提交" ci_blocks_no_type
 refute "ci-gate blocks a commit that removed a hook file" ci_blocks_missing_hook
 refute "ci-gate blocks a tracked secret file" ci_blocks_tracked_secret
 finish
