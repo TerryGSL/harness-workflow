@@ -1,0 +1,2 @@
+# Claude Code
+This project uses AGENTS.md as the single source of truth. See ./AGENTS.md
