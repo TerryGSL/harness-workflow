@@ -23,7 +23,15 @@ blocks_oversized_workflow() {
   cd - >/dev/null; rm -rf "$d"; return $rc    # 应 != 0
 }
 
+blocks_oversized_skill() {
+  local d; d=$(mktarget); cd "$d" || return 2
+  mkdir -p skill/harness-workflow
+  for i in $(seq 1 160); do echo "行 $i" >> skill/harness-workflow/SKILL.md; done
+  bash "$VG" >/dev/null 2>&1; local rc=$?
+  cd - >/dev/null; rm -rf "$d"; return $rc    # 应 != 0
+}
 assert "verify-governance 在限内通过" passes_within_limits
 refute "verify-governance 拦超长 AGENTS.md" blocks_oversized_agents
 refute "verify-governance 拦超长 WORKFLOW.md" blocks_oversized_workflow
+refute "verify-governance 拦超长 SKILL.md(>150)" blocks_oversized_skill
 finish
