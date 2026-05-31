@@ -3,6 +3,7 @@
 > 唯一事实源（Codex/Cursor/Aider 直接读本文件；Claude 经 CLAUDE.md stub 读）。
 > 红线（密钥、不推 main、改代码要记 memory）由 git hooks + CI 强制，不是君子协定；
 > 其余（Mode、反模式区）是约定。优先写可检查的约束，少写"应该"。
+> **优先级**：AGENTS 铁律 > docs/WORKFLOW.md 流程 > 单次任务指令；后者只能在不冲突处补充，不得推翻前者。
 
 ## 命令
 - 构建: <TODO>
