@@ -13,5 +13,9 @@ SECRET_RE='(^|/)\.env($|\.)|(^|/)secrets?/|(^|/)\.npmrc$|(^|/)\.pypirc$|(^|/)id_
 MEMORY_TRAILER_RE='^Memory:[[:space:]]*[^[:space:]]+'
 # Revert/rollback commits are exempt from the memory gate (回退类不被卡,避免诱导静默绕过).
 MEMORY_EXEMPT_RE='^(Revert|Rollback|revert)'
+
+# 证据门：任务类型声明 + 测试文件识别(verify-evidence 与 ci-gate 共享)
+HARNESS_TYPE_RE='^Harness-Type:[[:space:]]*(trivial|bug|feature|refactor)'
+TEST_FILE_RE='(^|/)tests?/|\.(test|spec)\.|_test\.|(^|/)test_[^/]*\.py$'
 # A changed-file list satisfies the gate if it adds/edits a memory artifact.
 MEMORY_FILE_RE='^docs/memory/(cases|decisions)/.+\.md$'
