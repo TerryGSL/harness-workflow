@@ -1,3 +1,6 @@
 *.tmp
 .DS_Store
+/.mcp.json
+AGENTS.md
+CLAUDE.md
 test/.work/
