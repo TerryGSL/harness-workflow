@@ -5,6 +5,8 @@ set -uo pipefail
 
 if [ "${1:-}" = "--lib" ]; then
   # ---- library mode: provide assert helpers to a test file ----
+  # Ensure HW_ROOT is set even when a test-*.sh is run standalone (not via the runner).
+  HW_ROOT="${HW_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"; export HW_ROOT
   _T_PASS=0; _T_FAIL=0
   assert() { # assert <desc> <cmd...>  (passes if cmd exits 0)
     local desc="$1"; shift
