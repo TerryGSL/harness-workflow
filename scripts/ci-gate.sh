@@ -32,6 +32,7 @@ for c in $(git rev-list "$range" 2>/dev/null); do
   msg=$(git log -1 --format=%B "$c")
   printf '%s\n' "$msg" | head -1 | grep -qE "$MEMORY_EXEMPT_RE" && continue
   printf '%s\n' "$msg" | grep -qiE '^(Revert|Rollback):' && continue
+  printf '%s\n' "$msg" | head -1 | grep -qiE '^merge[ (]' && continue   # merge commit 豁免(合并的是已过门提交)
   # memory 门
   mem=$(printf '%s\n' "$files" | grep -E "$MEMORY_FILE_RE" || true)
   if [ -z "$mem" ] && ! printf '%s\n' "$msg" | grep -qiE "$MEMORY_TRAILER_RE"; then
