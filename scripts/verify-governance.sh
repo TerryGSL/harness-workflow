@@ -6,7 +6,8 @@ set -uo pipefail
 fail=0
 check_max() { # <file> <max>
   [ -f "$1" ] || return 0
-  local n; n=$(wc -l < "$1" | tr -d ' ')
+  # 剥离 claude-mem 注入块(SessionStart hook 注入的机器 context,非入口正文)再数行,否则会反复撑爆行数门
+  local n; n=$(sed '/<claude-mem-context>/,/<\/claude-mem-context>/d' "$1" | wc -l | tr -d ' ')
   if [ "$n" -gt "$2" ]; then
     echo "✗ governance：$1 有 $n 行,超过上限 $2 行(入口是索引不是正文,拆到 docs/ 下的 topic 文件)" >&2
     fail=1

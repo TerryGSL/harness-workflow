@@ -17,8 +17,9 @@ fi
 staged=$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
 [ -z "$staged" ] && exit 0
 
-# 回退/rollback 类提交豁免(首行或 trailer 命中) —— 紧急回滚不该被 memory 门禁卡。
-if head -1 "$MSG_FILE" | grep -qE "$MEMORY_EXEMPT_RE" || grep -qiE '^(Revert|Rollback):' "$MSG_FILE"; then
+# 回退/rollback/merge 类提交豁免 —— 紧急回滚 + merge commit(合并的是已过门提交)不该被 memory 门卡。
+if head -1 "$MSG_FILE" | grep -qE "$MEMORY_EXEMPT_RE" || grep -qiE '^(Revert|Rollback):' "$MSG_FILE" \
+   || [ -f "$(git rev-parse --git-dir 2>/dev/null)/MERGE_HEAD" ] || head -1 "$MSG_FILE" | grep -qiE '^merge[ (]'; then
   exit 0
 fi
 

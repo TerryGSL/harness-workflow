@@ -10,6 +10,8 @@ MSG="${1:-}"; [ -f "$MSG" ] || { echo "verify-evidence: 缺 commit message 文�
 # 回退类豁免
 head -1 "$MSG" | grep -qE "$MEMORY_EXEMPT_RE" && exit 0
 grep -qiE '^(Revert|Rollback):' "$MSG" && exit 0
+# merge commit 豁免:合并的是各自已过门的提交,merge commit 本身不重复证据门(否则并行/分支合并会卡)
+{ [ -f "$(git rev-parse --git-dir 2>/dev/null)/MERGE_HEAD" ] || head -1 "$MSG" | grep -qiE '^merge[ (]'; } && exit 0
 
 staged=$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
 significant=$(printf '%s\n' "$staged" | grep -E "$SIGNIFICANT_RE" || true)

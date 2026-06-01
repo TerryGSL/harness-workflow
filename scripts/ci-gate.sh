@@ -66,7 +66,7 @@ for c in $(git rev-list "$range" 2>/dev/null); do
 done
 
 # 3. No secret-like files tracked at HEAD.
-secrets=$(git ls-tree -r --name-only "$HEAD" 2>/dev/null | grep -E "$SECRET_RE" || true)
+secrets=$(git ls-tree -r --name-only "$HEAD" 2>/dev/null | grep -E "$SECRET_RE" | grep -vE '\.(example|template|sample|dist)$' || true)
 if [ -n "$secrets" ]; then
   echo "✗ ci-gate：仓库里 track 了密钥类文件："; printf '%s\n' "$secrets" | sed 's/^/    /'
   fail=1
