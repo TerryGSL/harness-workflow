@@ -1,1 +1,2 @@
 {"id": "20260601-风险分级push", "type": "feature", "oneliner": "从旧 harness 挖回「风险分级 push」精华(codex 评为 5 个候选里 ROI 最高、最机械)。"}
+{"id": "20260601-state自动同步", "type": "feature", "oneliner": "治用户痛点:每轮 state.json 全 null、架构文档不同步——因为它们是 advisory(靠\"记得做\")。"}

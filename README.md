@@ -40,8 +40,8 @@ bash install.sh --name X   # 装成别名, 不动旧的
 - `docs/WORKFLOW.md`（干活流程：任务分级 + 各档步骤）· `docs/PROJECT.md`（指针地图）
 - `docs/memory/{cases,decisions}/`
 - 跨工具指针：`.aider.conf.yml` · `.cursor/rules/harness.mdc`
-- git hooks：pre-commit（密钥）· commit-msg（memory 门禁，带 `Memory:` 逃生口）· pre-push（不推 main + 测试 + force-push 确认）
-- CI：`.github/workflows/harness-gate.yml`（服务端，不可绕过）
+- git hooks：pre-commit（密钥）· commit-msg（memory + 证据门）· pre-push（不推 main + 测试 + **风险分级**[HIGH=密钥/依赖/schema/CI，问一次] + force-push 确认）
+- CI：`.github/workflows/harness-gate.yml`（服务端，不可绕过；HIGH 增量推送要 `Risk-Ack:` 留痕）
 
 可选（默认不建）：`WORK.md`（只在跑并行 agent 时）。进度就是 `git log`——没有状态文件要同步。
 
@@ -62,7 +62,7 @@ harness 长在 repo 里，不在工具配置里：`AGENTS.md`（Codex/Cursor/Aid
 - **按大小路由**：trivial 直接做 / bug 走调试管线 / feature 走完整管线（脑暴→计划→分任务→codex 审→验证→记忆）/ refactor 行为保持。结构当**指南**。
 - **机械证据门 = "保证按流程"**：改代码的 commit 必须带 `Harness-Type:`，hook+CI 按类型查证据——bug 要测试 / feature 要 `Plan:`+`Reviewed-by:` / refactor 要 `Behavior-Unchanged:`。不合规 commit/CI 拒。**不靠模型自觉,靠机械门**。
 - **subagent 同步靠 artifacts**：`scripts/brief.sh` 给子 agent 自包含简报(state.json+git+memory)；子 agent 只回结论+证据；主 agent synthesize 后更新 state + commit。
-- **state.json = 可删恢复缓存**：`scripts/state.sh show/regen` 秒级恢复，门禁绝不读它（烂了能 regen，不会重演 current.json 死法）。
+- **state.json = 自动同步的可删缓存**：`record.sh start/done` **自动写**它（currentTask/taskType/currentStage，不靠记得手动更新），`scripts/state.sh show/regen` 秒级恢复，门禁绝不读它（烂了能 regen，不会重演 current.json 死法）。
 
 ## 怎么迭代本 repo（漂移测试——防止它越长越胖、越胖越没用）
 

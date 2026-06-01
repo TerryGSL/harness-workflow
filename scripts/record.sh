@@ -7,6 +7,9 @@
 set -uo pipefail
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 REC="$ROOT/.harness/records"; IDX="$ROOT/.harness/change-index.jsonl"
+SDIR="$(cd "$(dirname "$0")" && pwd)"
+# state.json 是可删缓存:start/done 自动同步它,不靠"记得手动写"。失败不阻断(它只是缓存)。
+sync_state(){ bash "$SDIR/state.sh" set "$1" "$2" >/dev/null 2>&1 || true; }
 cmd="${1:-}"; shift 2>/dev/null || true
 
 case "$cmd" in
@@ -30,6 +33,7 @@ case "$cmd" in
       echo "## Context（最近相关需求,自动摘自 change-index）"
       if [ -f "$IDX" ]; then tail -n 5 "$IDX" | sed 's/^/- /'; else echo "-（无历史）"; fi
     } > "$f"
+    sync_state currentTask "$id"; sync_state taskType "$type"; sync_state currentStage in_progress
     echo "$id"
     ;;
   done)
@@ -65,6 +69,7 @@ for p in parts:
 PY
 )
     python3 -c 'import json,sys; print(json.dumps({"id":sys.argv[1],"type":sys.argv[2],"oneliner":sys.argv[3]},ensure_ascii=False))' "$id" "${type:-?}" "${one:-}" >> "$IDX"
+    sync_state currentStage done; sync_state lastGate "record done: $id"
     echo "✓ done: $id → change-index.jsonl appended"
     un=$(grep -c '^- \[ \]' "$f" 2>/dev/null || true); un=${un:-0}
     [ "$un" -gt 0 ] && echo "ℹ 注意:还有 $un 个未勾选任务(Followups 里交代,或下轮继续)" || true
