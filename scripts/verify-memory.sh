@@ -29,6 +29,17 @@ significant=$(printf '%s\n' "$staged" | grep -E "$SIGNIFICANT_RE" || true)
 mem_staged=$(printf '%s\n' "$staged" | grep -E "$MEMORY_FILE_RE" || true)
 [ -n "$mem_staged" ] && exit 0
 
+# 修复类提交(fix:/fix( )必须留下坑的解法 —— 修了 bug/坑却 Memory: none,坑就流失了。
+# 没记 case 文件(上面已 exit)且首行是 fix 且 Memory 是 none/trivial → 拒。要么记 case,要么写实质一句话。
+if head -1 "$MSG_FILE" | grep -qiE '^fix[ (:]' && grep -qiE '^Memory:[[:space:]]*(none|trivial|无)[[:space:]]*$' "$MSG_FILE"; then
+  cat >&2 <<'EOF'
+✗ memory 门禁(fix 类提交)：修了 bug/坑,不接受 Memory: none——坑会流失,以后还踩。二选一：
+    • 加 docs/memory/cases/<日期>-<slug>.md   （记根因+解法,以后不再踩;最推荐）
+    • 或写实质 trailer：Memory: <一句话根因+解法>   （不能是 none/trivial）
+EOF
+  exit 1
+fi
+
 if grep -qiE "$MEMORY_TRAILER_RE" "$MSG_FILE"; then
   exit 0
 fi
