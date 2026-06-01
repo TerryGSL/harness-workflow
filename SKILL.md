@@ -8,7 +8,9 @@ description: 持续开发工作流。代码任务(做/加/修/改/实现/重构/
 **怎么"保证按流程"**:不是靠你读这段(prose 会漂),是靠 **commit 带 `Harness-Type:` + git hook/CI 查证据 artifact**。下面是推荐怎么干,执行权在机械门。
 
 ## 接手任务先做
-`bash scripts/state.sh show`(秒级恢复;丢了 `regen`)→ 读 `docs/memory/summary.md` + `.harness/change-index.jsonl`(渐进下钻)→ 必要时 `git log --oneline -20`。未接入 → 先 `bash <repo>/init.sh`。
+**先查记忆**(装了 claude-mem 就用):`mem-search` / query claude-mem 找"上次怎么做 / 踩过啥坑"(跨 session 对话记忆)→ `bash scripts/state.sh show`(秒级恢复;丢了 `regen`)→ 读 `.harness/change-index.jsonl`(渐进下钻)+ `docs/memory/` case·decision → 必要时 `git log --oneline -20`。未接入 → 先 `bash <repo>/init.sh`。
+
+> **记忆三层,各干各的,别当替代品**:claude-mem = 跨 session 对话 observation(插件自动记,接手时主动 query)· `.harness/records/` = 每需求沉淀(record.sh,git-tracked)· `docs/memory/` = case/decision(踩坑·架构取舍,git-tracked)。
 
 ## 沉淀(机械强制,治"每轮啥也不留")
 非 trivial 任务**开工先** `id=$(bash scripts/record.sh start <type> <slug>)` 建 `.harness/records/<id>.md`,边做边填 What/Changed&Why/Tests/Decisions/Followups。**commit 必须带 `Harness-Record: <id>` 且同 commit 改了该 record.md**,否则 commit-msg/CI 拒。收尾 `bash scripts/record.sh done <id>`(校验段落非空 + append change-index)。trivial 免。
@@ -19,12 +21,12 @@ description: 持续开发工作流。代码任务(做/加/修/改/实现/重构/
 - **refactor** → `superpowers:test-driven-development` 固化行为 → 小步改每步全绿 → 不混功能。
 - **feature/大改** → 推荐管线:`superpowers:brainstorming` 脑暴 → `writing-plans` 计划 → `subagent-driven-development` 分任务实现 → `codex review` 独立审查 → `verification-before-completion` 验证 → claude-mem(装了的话)记忆 → commit。
 
-> 这些是**指南**;feature 的"完整阶段"对大改有用,小改别硬上。claude-mem 没装就用 docs/memory/。
+> 这些是**指南**;feature 的"完整阶段"对大改有用,小改别硬上。脑暴/设计任务**必须**走 `superpowers:brainstorming`(别手动脑暴),feature commit 由证据门查 `Brainstormed-by:` 留痕。
 
 ## 证据门(机械保证,commit 必须满足否则 commit/CI 拒)
 改代码的 commit 必须声明 `Harness-Type: trivial|bug|feature|refactor`,并按类型带证据:
 - **bug** → 同 commit 含测试文件,**或** `No-Repro: <原因>`
-- **feature** → `Plan: <计划文件>`(或同 commit 含 docs/**plan*.md) **且** `Reviewed-by: codex`(过审留痕)
+- **feature** → `Plan: <计划文件>`(或同 commit 含 docs/**plan*.md) **且** `Reviewed-by: codex`(过审留痕) **且** `Brainstormed-by: <superpowers:brainstorming | none:理由>`(脑暴先行留痕;没走脑暴就 `none:` 写明原因)
 - **refactor** → `Behavior-Unchanged: true`(测试绿由 pre-push/CI 验)
 - **trivial** → 无额外证据
 回退提交(`Revert`/`Rollback`)豁免。memory 仍由 commit-msg 门要求(`Memory:` 或 case)。

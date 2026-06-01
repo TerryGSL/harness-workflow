@@ -17,7 +17,7 @@
 
 ## 证据门（机械保证"按流程"——commit/CI 拒不合规）
 改代码的 commit 必须带 `Harness-Type: trivial|bug|feature|refactor`，并按类型带证据：
-bug→测试或 `No-Repro:`；feature→`Plan:`+`Reviewed-by:`；refactor→`Behavior-Unchanged: true`。回退提交豁免。
+bug→测试或 `No-Repro:`；feature→`Plan:`+`Reviewed-by:`+`Brainstormed-by:`；refactor→`Behavior-Unchanged: true`。回退提交豁免。
 （这才是"保证按流程"，不靠你读上面的提示。）
 
 ## degraded 不静默

@@ -55,7 +55,11 @@ for c in $(git rev-list "$range" 2>/dev/null); do
       elif printf '%s\n' "$msg" | grep -qiE '^No-Repro:[[:space:]]*[^[:space:]]'; then :
       else echo "✗ ci-gate：bug commit ${c:0:8} 无测试/无 No-Repro"; fail=1; fi ;;
     feature)
-      printf '%s\n' "$msg" | grep -qiE '^Reviewed-by:[[:space:]]*[^[:space:]]' || { echo "✗ ci-gate：feature commit ${c:0:8} 缺 Reviewed-by"; fail=1; } ;;
+      if printf '%s\n' "$msg" | grep -qiE '^Plan:[[:space:]]*[^[:space:]]'; then :
+      elif printf '%s\n' "$files" | grep -qiE '^docs/.*plan.*\.md$'; then :
+      else echo "✗ ci-gate：feature commit ${c:0:8} 缺 Plan(镜像 verify-evidence)"; fail=1; fi
+      printf '%s\n' "$msg" | grep -qiE '^Reviewed-by:[[:space:]]*[^[:space:]]' || { echo "✗ ci-gate：feature commit ${c:0:8} 缺 Reviewed-by"; fail=1; }
+      printf '%s\n' "$msg" | grep -qiE "$BRAINSTORMED_RE" || { echo "✗ ci-gate：feature commit ${c:0:8} 缺 Brainstormed-by"; fail=1; } ;;
     refactor)
       printf '%s\n' "$msg" | grep -qiE '^Behavior-Unchanged:[[:space:]]*(true|yes|是)' || { echo "✗ ci-gate：refactor commit ${c:0:8} 缺 Behavior-Unchanged"; fail=1; } ;;
   esac; fi

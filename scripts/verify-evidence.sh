@@ -43,7 +43,8 @@ case "$type" in
     [ -n "$plan" ] && [ -e "$plan" ] && ok=1
     printf '%s\n' "$staged" | grep -qiE '^docs/.*plan.*\.md$' && ok=1
     [ "$ok" = 1 ] || { echo "✗ 证据门(feature)：需 Plan: <存在的计划文件> 或同 commit 含 docs/**plan*.md" >&2; exit 1; }
-    grep -qiE '^Reviewed-by:[[:space:]]*[^[:space:]]' "$MSG" || { echo "✗ 证据门(feature)：需 Reviewed-by: <codex|...>(过一道独立审查并留痕)" >&2; exit 1; } ;;
+    grep -qiE '^Reviewed-by:[[:space:]]*[^[:space:]]' "$MSG" || { echo "✗ 证据门(feature)：需 Reviewed-by: <codex|...>(过一道独立审查并留痕)" >&2; exit 1; }
+    grep -qiE "$BRAINSTORMED_RE" "$MSG" || { echo "✗ 证据门(feature)：需 Brainstormed-by: <superpowers:brainstorming | none:理由>(脑暴先行留痕)" >&2; exit 1; } ;;
   refactor)
     grep -qiE '^Behavior-Unchanged:[[:space:]]*(true|yes|是)' "$MSG" || { echo "✗ 证据门(refactor)：需 Behavior-Unchanged: true(测试绿由 pre-push/CI 验)" >&2; exit 1; } ;;
 esac

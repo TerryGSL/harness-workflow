@@ -27,6 +27,12 @@ hp=$(git config --local --get core.hooksPath 2>/dev/null || true)
 if [ "$hp" = ".githooks" ]; then ok "core.hooksPath=.githooks(本地 hook 已激活)"
 else warn "core.hooksPath 未设为 .githooks —— 本 clone 的本地 hook 没激活,跑 init.sh 或 git config core.hooksPath .githooks(CI 仍兜底)"; fi
 
+# 3b. husky 场景:harness 红线是否接进 .husky/(init 会自动接 commit-msg/pre-commit)
+if [ -d .husky ]; then
+  if grep -q 'harness-workflow' .husky/commit-msg 2>/dev/null; then ok "husky 已接入 harness 红线(.husky/commit-msg)"
+  else warn "检测到 husky 但 harness 红线未接入 —— 跑 init.sh 自动接,或手动在 .husky/commit-msg 加 'bash .githooks/commit-msg \"\$@\"'"; fi
+fi
+
 # 4. CI 兜底存在(真正跨工具不变量)
 [ -f .github/workflows/harness-gate.yml ] && ok "CI 兜底 harness-gate.yml 存在" || warn "缺 .github/workflows/harness-gate.yml —— 跨工具/绕过 hook 的不变量缺失"
 
