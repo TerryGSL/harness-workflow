@@ -12,7 +12,7 @@ init_repo() {
     && git add -A && git commit -q --no-verify -m $'chore: scaffold\n\nHarness-Type: trivial\nMemory: none' )
   echo "$d"
 }
-run_ci() { ( cd "$1" && bash "$CI" >/dev/null 2>&1 ); }
+run_ci() { ( cd "$1" && bash "$CI" "${2:-}" "${3:-HEAD}" >/dev/null 2>&1 ); }
 
 ci_passes_clean() {
   local d; d=$(init_repo); run_ci "$d"; local rc=$?; rm -rf "$d"; return $rc   # expect 0
@@ -48,6 +48,21 @@ ci_blocks_feature_no_record() {
   ( cd "$d" && mkdir -p src && echo x > src/a.ts && git add -A && git commit -q --no-verify -m $'feat\n\nHarness-Type: feature\nMemory: none' )
   run_ci "$d"; local rc=$?; rm -rf "$d"; return $rc   # 非0(缺 Harness-Record / record.md)
 }
+# 风险分级镜像:增量推送评 HIGH(改依赖) 且无 Risk-Ack → CI 拦;带 Risk-Ack → 过。
+ci_blocks_high_without_ack() {
+  local d; d=$(init_repo); local b; b=$( cd "$d" && git rev-parse HEAD )
+  ( cd "$d" && echo '{"x":1}' > package.json && git add -A \
+    && git commit -q --no-verify -m $'chore: bump dep\n\nHarness-Type: trivial\nMemory: none' )
+  run_ci "$d" "$b"; local rc=$?; rm -rf "$d"; return $rc   # 非0(HIGH 缺 Risk-Ack)
+}
+ci_passes_high_with_ack() {
+  local d; d=$(init_repo); local b; b=$( cd "$d" && git rev-parse HEAD )
+  ( cd "$d" && echo '{"x":1}' > package.json && git add -A \
+    && git commit -q --no-verify -m $'chore: bump dep\n\nHarness-Type: trivial\nMemory: none\nRisk-Ack: 依赖升级已人工核对' )
+  run_ci "$d" "$b"; local rc=$?; rm -rf "$d"; return $rc   # 0(带 Risk-Ack)
+}
+refute "ci-gate 拦 HIGH 推送(改依赖)缺 Risk-Ack" ci_blocks_high_without_ack
+assert "ci-gate 放行带 Risk-Ack 的 HIGH 推送" ci_passes_high_with_ack
 refute "ci-gate 拦 feature 无沉淀 record" ci_blocks_feature_no_record
 assert "ci-gate passes a clean scaffold commit" ci_passes_clean
 refute "ci-gate blocks bypassed code commit w/o memory" ci_blocks_code_without_memory

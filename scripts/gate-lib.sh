@@ -21,3 +21,13 @@ TEST_FILE_RE='(^|/)tests?/|\.(test|spec)\.|_test\.|(^|/)test_[^/]*\.py$'
 HARNESS_RECORD_RE='^Harness-Record:[[:space:]]*[^[:space:]]+'
 # A changed-file list satisfies the gate if it adds/edits a memory artifact.
 MEMORY_FILE_RE='^docs/memory/(cases|decisions)/.+\.md$'
+
+# 风险分级(classify-risk.sh 用)。HIGH 只收「内容高危」信号——故意不收「文件数多」:
+# 纯文件数不是危险,频繁触发会让 HIGH 确认沦为无脑 y，护栏变剧场(codex 告诫)。
+RISK_DEP_RE='(^|/)(package\.json|package-lock\.json|yarn\.lock|pnpm-lock\.yaml|go\.(mod|sum)|Cargo\.(toml|lock)|pyproject\.toml|requirements[^/]*\.txt|Pipfile(\.lock)?|Gemfile(\.lock)?|composer\.(json|lock))$'
+RISK_SCHEMA_RE='\.(sql|prisma)$|(^|/)migrations?/'
+RISK_CI_RE='^\.github/workflows/|(^|/)\.gitlab-ci\.yml$|(^|/)\.circleci/|(^|/)Jenkinsfile$'
+# 文档-only:一段 diff 若全部文件命中 → 评 LOW(不打扰)。
+DOCS_ONLY_RE='\.(md|markdown|txt|rst|adoc)$|(^|/)docs/|(^|/)LICENSE($|\.)|(^|/)\.gitignore$'
+# HIGH 推送的显式确认 trailer(CI 不能问人，靠这个留痕)。
+RISK_ACK_RE='^Risk-Ack:[[:space:]]*[^[:space:]]+'

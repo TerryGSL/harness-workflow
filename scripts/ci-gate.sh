@@ -68,7 +68,20 @@ if [ -n "$secrets" ]; then
   fail=1
 fi
 
-# 4. 入口文件行数治理(单一规则源,与 pre-commit 同调)。CI 已 checkout,直接对工作树跑。
+# 4. 风险分级镜像 pre-push(服务端不可绕):HIGH 推送(密钥/依赖/schema/CI)必须有
+#    commit 带 'Risk-Ack: <理由>' 留痕——CI 不能问人,只能要凭据。客户端 pre-push 用同一个
+#    classify-risk.sh，规则永不漂移。测试失败仍由 per-commit/工作树测试独立硬 block,不在此处放行。
+# 仅在有真实 BASE(已有远程历史的增量推送)时启用:首次推送整个仓库必然含 CI/依赖等文件,
+# 评 HIGH 无意义且会卡住建仓。增量改 CI/依赖/schema 才是要盯的。
+if [ -x "$DIR/classify-risk.sh" ] && [ -n "$BASE" ] && git rev-parse -q --verify "${BASE}^{commit}" >/dev/null 2>&1; then
+  risk=$(bash "$DIR/classify-risk.sh" "$BASE" "$HEAD" 2>/dev/null || echo MEDIUM)
+  if [ "$risk" = "HIGH" ] && ! git log "$range" --format=%B 2>/dev/null | grep -qiE "$RISK_ACK_RE"; then
+    echo "✗ ci-gate：本次推送评级 HIGH(密钥/依赖/db schema/CI)，但无 commit 带 'Risk-Ack: <理由>' 留痕。"
+    fail=1
+  fi
+fi
+
+# 5. 入口文件行数治理(单一规则源,与 pre-commit 同调)。CI 已 checkout,直接对工作树跑。
 if [ -x "$DIR/verify-governance.sh" ]; then
   ( cd "$(git rev-parse --show-toplevel)" && bash scripts/verify-governance.sh ) || fail=1
 fi

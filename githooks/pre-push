@@ -4,6 +4,8 @@
 set -uo pipefail
 protected="main master"
 ZERO="0000000000000000000000000000000000000000"
+ROOT=$(git rev-parse --show-toplevel)
+max_risk="LOW"; risk_reason=""
 while read -r _local_ref local_sha remote_ref remote_sha; do
   [ -z "${remote_ref:-}" ] && continue
   branch=${remote_ref#refs/heads/}
@@ -13,6 +15,8 @@ while read -r _local_ref local_sha remote_ref remote_sha; do
       exit 1
     fi
   done
+  # 删除分支(local_sha 全 0) → 无内容可评,跳过风险分级。
+  [ "$local_sha" = "$ZERO" ] && continue
   # force-push / 改写历史检测：remote_sha 是真实 commit 且不是 local 的祖先 = 非快进(ask 三态)。
   # remote_sha 为 40 个 0(新分支)或无效 sha → 不是 force-push,跳过。
   if [ "$remote_sha" != "$ZERO" ] && git cat-file -e "${remote_sha}^{commit}" 2>/dev/null \
@@ -29,9 +33,39 @@ while read -r _local_ref local_sha remote_ref remote_sha; do
       echo "  非交互环境:放行但请留意。要静默确认设 HARNESS_CONFIRM=1。" >&2
     fi
   fi
+  # 风险分级(共享 classify-risk.sh)。range 取法用 push 的精确 refs，不盲用 HEAD：
+  #   已有远程分支 → base=remote_sha；新分支 → base=最老新 commit 的父(没有则空,看单 commit)。
+  if [ "$remote_sha" != "$ZERO" ] && git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+    base="$remote_sha"
+  else
+    oldest_new=$(git rev-list "$local_sha" --not --remotes 2>/dev/null | tail -1)
+    if [ -n "$oldest_new" ] && git rev-parse -q --verify "${oldest_new}~1^{commit}" >/dev/null 2>&1; then
+      base="${oldest_new}~1"
+    else base=""; fi
+  fi
+  reason_file=$(mktemp 2>/dev/null || echo /tmp/hw-risk.$$)
+  r=$(bash "$ROOT/scripts/classify-risk.sh" "$base" "$local_sha" 2>"$reason_file" || echo MEDIUM)
+  case "$r" in
+    HIGH)   max_risk="HIGH";   risk_reason=$(cat "$reason_file" 2>/dev/null) ;;
+    MEDIUM) [ "$max_risk" = "LOW" ] && max_risk="MEDIUM" ;;
+  esac
+  rm -f "$reason_file"
 done
 
-ROOT=$(git rev-parse --show-toplevel)
+# HIGH 推送 → 问一次(三态，与 force-push 一致)。CI 端则要求 Risk-Ack trailer 留痕。
+if [ "$max_risk" = "HIGH" ]; then
+  echo "⚠ pre-push：本次推送评级 HIGH —— ${risk_reason:-内容高危}" >&2
+  if [ "${HARNESS_CONFIRM:-}" = "1" ]; then
+    echo "  HARNESS_CONFIRM=1 已确认,放行。" >&2
+  elif [ -r /dev/tty ]; then
+    printf "  确认推送 HIGH 变更吗? [y/N] " >&2
+    read -r _ans < /dev/tty || _ans=""
+    case "$_ans" in y|Y|yes) : ;; *) echo "✗ 已取消。" >&2; exit 1 ;; esac
+  else
+    echo "  非交互环境:放行但请留意(服务端 CI 会要求 commit 带 Risk-Ack: <理由>)。" >&2
+  fi
+fi
+
 cd "$ROOT"
 
 # Best-effort test run across common stacks. Server-side CI (ci-gate) is the real gate.
