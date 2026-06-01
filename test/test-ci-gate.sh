@@ -43,6 +43,12 @@ ci_blocks_tracked_secret() {
   run_ci "$d"; local rc=$?; rm -rf "$d"; return $rc   # expect non-zero
 }
 
+ci_blocks_feature_no_record() {
+  local d; d=$(init_repo)
+  ( cd "$d" && mkdir -p src && echo x > src/a.ts && git add -A && git commit -q --no-verify -m $'feat\n\nHarness-Type: feature\nMemory: none' )
+  run_ci "$d"; local rc=$?; rm -rf "$d"; return $rc   # 非0(缺 Harness-Record / record.md)
+}
+refute "ci-gate 拦 feature 无沉淀 record" ci_blocks_feature_no_record
 assert "ci-gate passes a clean scaffold commit" ci_passes_clean
 refute "ci-gate blocks bypassed code commit w/o memory" ci_blocks_code_without_memory
 assert "ci-gate passes code commit with Harness-Type + Memory" ci_passes_code_with_trailer

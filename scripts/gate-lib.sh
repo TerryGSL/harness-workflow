@@ -17,5 +17,7 @@ MEMORY_EXEMPT_RE='^(Revert|Rollback|revert)'
 # 证据门：任务类型声明 + 测试文件识别(verify-evidence 与 ci-gate 共享)
 HARNESS_TYPE_RE='^Harness-Type:[[:space:]]*(trivial|bug|feature|refactor)'
 TEST_FILE_RE='(^|/)tests?/|\.(test|spec)\.|_test\.|(^|/)test_[^/]*\.py$'
+# 沉淀门:非 trivial commit 必须带 Harness-Record: <id> 且同 commit 改了 .harness/records/<id>.md
+HARNESS_RECORD_RE='^Harness-Record:[[:space:]]*[^[:space:]]+'
 # A changed-file list satisfies the gate if it adds/edits a memory artifact.
 MEMORY_FILE_RE='^docs/memory/(cases|decisions)/.+\.md$'

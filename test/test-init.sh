@@ -9,12 +9,13 @@ scaffolds_files() {
   local ok=0
   for f in AGENTS.md CLAUDE.md docs/PROJECT.md docs/WORKFLOW.md .harness/state.json \
            .aider.conf.yml .cursor/rules/harness.mdc .github/workflows/harness-gate.yml \
+           docs/memory/summary.md .harness/change-index.jsonl \
            scripts/gate-lib.sh scripts/verify-memory.sh scripts/verify-evidence.sh scripts/verify-governance.sh \
-           scripts/ci-gate.sh scripts/doctor.sh scripts/state.sh \
+           scripts/ci-gate.sh scripts/doctor.sh scripts/state.sh scripts/record.sh \
            .githooks/pre-commit .githooks/commit-msg .githooks/pre-push; do
     [ -e "$d/$f" ] || { echo "missing $f" >&2; ok=1; }
   done
-  [ -d "$d/docs/memory/cases" ] && [ -d "$d/docs/memory/decisions" ] || ok=1
+  [ -d "$d/docs/memory/cases" ] && [ -d "$d/docs/memory/decisions" ] && [ -d "$d/.harness/records" ] || ok=1
   rm -rf "$d"; return $ok
 }
 omits_optional_files() {  # minimalism: init must NOT create these

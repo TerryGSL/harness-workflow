@@ -11,7 +11,7 @@ MSG="${1:-}"; [ -f "$MSG" ] || { echo "verify-evidence: 缺 commit message 文�
 head -1 "$MSG" | grep -qE "$MEMORY_EXEMPT_RE" && exit 0
 grep -qiE '^(Revert|Rollback):' "$MSG" && exit 0
 
-staged=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
+staged=$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
 significant=$(printf '%s\n' "$staged" | grep -E "$SIGNIFICANT_RE" || true)
 [ -z "$significant" ] && exit 0   # 非代码改动不要求证据
 
@@ -20,6 +20,17 @@ if [ -z "$type" ]; then
   echo "✗ 证据门：改了代码必须声明任务类型 → commit 信息加 Harness-Type: trivial|bug|feature|refactor" >&2
   exit 1
 fi
+# 沉淀门(非 trivial 通用):必须带 Harness-Record:<id> 且同 commit 改了对应 record.md
+if [ "$type" != "trivial" ]; then
+  rid=$(grep -iE "$HARNESS_RECORD_RE" "$MSG" | head -1 | sed -E 's/^[Hh]arness-[Rr]ecord:[[:space:]]*//' | tr -d '[:space:]')
+  if [ -z "$rid" ]; then
+    echo "✗ 沉淀门：$type commit 必须带 trailer  Harness-Record: <id>（先 record.sh start 拿 id）" >&2; exit 1
+  fi
+  if ! printf '%s\n' "$staged" | grep -qxF ".harness/records/$rid.md"; then
+    echo "✗ 沉淀门：必须在同一 commit 里改 .harness/records/$rid.md（沉淀绑定本次变更）" >&2; exit 1
+  fi
+fi
+
 case "$type" in
   trivial) ;;
   bug)

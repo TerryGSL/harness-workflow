@@ -8,7 +8,10 @@ description: 持续开发工作流。代码任务(做/加/修/改/实现/重构/
 **怎么"保证按流程"**:不是靠你读这段(prose 会漂),是靠 **commit 带 `Harness-Type:` + git hook/CI 查证据 artifact**。下面是推荐怎么干,执行权在机械门。
 
 ## 接手任务先做
-`bash scripts/state.sh show`(秒级恢复;丢了 `regen`)→ 必要时 `git log --oneline -20`。未接入(无 .harness/)→ 先 `bash <repo>/init.sh`。
+`bash scripts/state.sh show`(秒级恢复;丢了 `regen`)→ 读 `docs/memory/summary.md` + `.harness/change-index.jsonl`(渐进下钻)→ 必要时 `git log --oneline -20`。未接入 → 先 `bash <repo>/init.sh`。
+
+## 沉淀(机械强制,治"每轮啥也不留")
+非 trivial 任务**开工先** `id=$(bash scripts/record.sh start <type> <slug>)` 建 `.harness/records/<id>.md`,边做边填 What/Changed&Why/Tests/Decisions/Followups。**commit 必须带 `Harness-Record: <id>` 且同 commit 改了该 record.md**,否则 commit-msg/CI 拒。收尾 `bash scripts/record.sh done <id>`(校验段落非空 + append change-index)。trivial 免。
 
 ## 路由(按影响范围+可逆性,判不准往重的放)
 - **trivial**(单文件/可一键 revert/不碰 schema 接口依赖)→ 直接改+测+commit。
@@ -26,12 +29,12 @@ description: 持续开发工作流。代码任务(做/加/修/改/实现/重构/
 - **trivial** → 无额外证据
 回退提交(`Revert`/`Rollback`)豁免。memory 仍由 commit-msg 门要求(`Memory:` 或 case)。
 
-## 分任务用 subagent(context/state 同步靠 artifacts,不靠传对话)
-派 subagent 跑并行任务时(复用 `superpowers:subagent-driven-development`;并行多任务也可用 `task-dispatcher`):
-- **派发前(in)**:`bash scripts/brief.sh "<子任务>" "<文件边界>"` 生成自包含简报塞进 subagent prompt(含 state.json+近期 git+地图+相关 memory)。零上下文也对齐。
-- **边界**:one file one owner,各 subagent 文件不相交 + 各自分支;同文件必串行。
-- **回收(out)**:subagent 只回 结论+证据(改了啥/测试结果/决策),不回脏中间态。
-- **同步(state)**:主 agent synthesize → `scripts/state.sh set` 更新 + 勾 plan checkbox + commit(git 成共享真相)+ 必要时写 decision。
+## 任务板 + 多 agent 并行(都挂在 record.md 的 `## Tasks`)
+- **任务板=record.md 的 `## Tasks`**:把需求拆成 `- [ ] N <任务>`;开发时用 Claude **TodoWrite** 做实时视图,做完一条就把 record.md 里勾成 `- [x]`(进度持久进 git,`bash scripts/record.sh tasks <id>` 看 X/N)。
+- **并行 subagent**(复用 `superpowers:subagent-driven-development`,多任务也可 `task-dispatcher`):每个 sub-agent **认领一条任务**,在该行标 `@owner wt=<worktree>`;各自 worktree、**文件不相交**(one file one owner,同文件必串行)。
+- **派发前(in)**:`bash scripts/brief.sh "<该任务>" "<文件边界>"` 生成自包含简报塞进 subagent prompt(含 state+近期 git+memory),零上下文也对齐。
+- **回收(out)**:sub-agent 只回 结论+证据(改了啥/测试/决策),不回脏中间态。
+- **同步(state)**:主 agent synthesize → 勾掉 record.md 对应 task + 必要时写 Decisions/decision → commit(带 `Harness-Record:<id>`,git 成共享真相)。
 
 ## 失败/降级
 阶段失败且 3 次内修不好 → `git restore` 本步(留前面成果)+ 记 case + 问用户。连续失败 ≥2 次停下。

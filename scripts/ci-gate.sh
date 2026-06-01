@@ -26,7 +26,7 @@ done
 
 # 2. Per-commit: memory 门 + 证据门(同一遍, 不早退以免漏检)。
 for c in $(git rev-list "$range" 2>/dev/null); do
-  files=$(git diff-tree --no-commit-id --name-only -r "$c" 2>/dev/null || true)
+  files=$(git -c core.quotePath=false diff-tree --no-commit-id --name-only -r "$c" 2>/dev/null || true)
   sig=$(printf '%s\n' "$files" | grep -E "$SIGNIFICANT_RE" || true)
   [ -z "$sig" ] && continue
   msg=$(git log -1 --format=%B "$c")
@@ -41,7 +41,15 @@ for c in $(git rev-list "$range" 2>/dev/null); do
   ctype=$(printf '%s\n' "$msg" | grep -iE "$HARNESS_TYPE_RE" | grep -oiE '(trivial|bug|feature|refactor)' | head -1 | tr 'A-Z' 'a-z')
   if [ -z "$ctype" ]; then
     echo "✗ ci-gate：commit ${c:0:8} 改了代码但未声明 Harness-Type"; fail=1
-  else case "$ctype" in
+  else
+    # 沉淀门(非 trivial):必须带 Harness-Record 且同 commit 改了对应 record.md
+    if [ "$ctype" != "trivial" ]; then
+      rid=$(printf '%s\n' "$msg" | grep -iE "$HARNESS_RECORD_RE" | head -1 | sed -E 's/^[Hh]arness-[Rr]ecord:[[:space:]]*//' | tr -d '[:space:]')
+      if [ -z "$rid" ]; then echo "✗ ci-gate：commit ${c:0:8} ($ctype) 缺 Harness-Record trailer"; fail=1
+      elif ! printf '%s\n' "$files" | grep -qxF ".harness/records/$rid.md"; then
+        echo "✗ ci-gate：commit ${c:0:8} 未在同 commit 改 .harness/records/$rid.md(沉淀未绑定)"; fail=1; fi
+    fi
+    case "$ctype" in
     bug)
       if printf '%s\n' "$files" | grep -qE "$TEST_FILE_RE"; then :
       elif printf '%s\n' "$msg" | grep -qiE '^No-Repro:[[:space:]]*[^[:space:]]'; then :

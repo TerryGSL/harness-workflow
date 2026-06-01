@@ -14,7 +14,7 @@ if [ -z "$MSG_FILE" ] || [ ! -f "$MSG_FILE" ]; then
   echo "verify-memory: missing commit message file" >&2; exit 2
 fi
 
-staged=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
+staged=$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
 [ -z "$staged" ] && exit 0
 
 # 回退/rollback 类提交豁免(首行或 trailer 命中) —— 紧急回滚不该被 memory 门禁卡。

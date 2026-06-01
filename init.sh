@@ -20,13 +20,16 @@ copy_if_absent "$HW_SRC/templates/state.json.tmpl" ".harness/state.json"
 copy_if_absent "$HW_SRC/templates/aider.conf.yml"  ".aider.conf.yml"
 copy_if_absent "$HW_SRC/templates/cursor-harness.mdc" ".cursor/rules/harness.mdc"
 copy_if_absent "$HW_SRC/templates/workflow-harness-gate.yml" ".github/workflows/harness-gate.yml"
-mkdir -p docs/memory/cases docs/memory/decisions
+mkdir -p docs/memory/cases docs/memory/decisions .harness/records
+# 沉淀层:change-index(JSONL,append 安全) + 跨需求稳定经验摘要
+[ -f .harness/change-index.jsonl ] || : > .harness/change-index.jsonl
+copy_if_absent "$HW_SRC/templates/memory-summary.md" "docs/memory/summary.md"
 # Intentionally NOT created (minimalism): WORK.md (opt-in, parallel only),
 # docs/memory/archive/ (lazy), .ai-mode (folded into AGENTS.md Mode line).
 
 # --- tool-owned scripts + hooks (refreshed each init) ---
 mkdir -p scripts .githooks
-for s in gate-lib.sh verify-memory.sh verify-evidence.sh verify-governance.sh ci-gate.sh doctor.sh state.sh brief.sh; do
+for s in gate-lib.sh verify-memory.sh verify-evidence.sh verify-governance.sh ci-gate.sh doctor.sh state.sh brief.sh record.sh; do
   [ -f "$HW_SRC/scripts/$s" ] && cp "$HW_SRC/scripts/$s" "scripts/$s" || true
 done
 chmod +x scripts/*.sh
