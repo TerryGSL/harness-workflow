@@ -26,7 +26,7 @@ if [ -z "$files" ]; then echo "LOW"; echo "（无文件变更）" >&2; exit 0; f
 
 reasons=""
 add() { reasons="${reasons:+$reasons, }$1"; }
-printf '%s\n' "$files" | grep -qE "$SECRET_RE"     && add "密钥类文件"
+printf '%s\n' "$files" | grep -vE '\.(example|template|sample|dist)$' | grep -qE "$SECRET_RE" && add "密钥类文件"
 printf '%s\n' "$files" | grep -qE "$RISK_DEP_RE"   && add "改依赖清单"
 printf '%s\n' "$files" | grep -qE "$RISK_SCHEMA_RE" && add "改 db schema/migration"
 printf '%s\n' "$files" | grep -qE "$RISK_CI_RE"    && add "改 CI 配置"

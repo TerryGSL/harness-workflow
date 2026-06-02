@@ -6,7 +6,7 @@ SECRET_RE='(^|/)\.env($|\.)|(^|/)secrets?/'   # conservative fallback if lib mis
 [ -r "$ROOT/scripts/gate-lib.sh" ] && . "$ROOT/scripts/gate-lib.sh"
 
 staged=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
-blocked=$(printf '%s\n' "$staged" | grep -E "$SECRET_RE" || true)
+blocked=$(printf '%s\n' "$staged" | grep -E "$SECRET_RE" | grep -vE '\.(example|template|sample|dist)$' || true)
 if [ -n "$blocked" ]; then
   echo "✗ pre-commit：拒绝提交密钥/凭证文件：" >&2
   printf '%s\n' "$blocked" | sed 's/^/    /' >&2
