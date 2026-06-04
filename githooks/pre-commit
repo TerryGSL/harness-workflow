@@ -21,6 +21,14 @@ if [ -x "$ROOT/scripts/verify-code-map.sh" ]; then
   fi
 fi
 
+# records-index 自动保鲜:本次提交动了 .harness/records/ 就重蒸馏 docs/memory/records-index.md 并 staged
+# (像 code-map 一样每次同步,不再等 supervisor 轮·永不失败,不挡循环)。
+if [ -x "$ROOT/scripts/distill-records.sh" ]; then
+  if printf '%s\n' "$staged" | grep -qE '^\.harness/records/.*\.md$'; then
+    bash "$ROOT/scripts/distill-records.sh" >/dev/null 2>&1 && git add docs/memory/records-index.md 2>/dev/null || true
+  fi
+fi
+
 # 入口文件行数治理（单一规则源；存在才查）
 if [ -r "$ROOT/scripts/verify-governance.sh" ]; then
   bash "$ROOT/scripts/verify-governance.sh" >&2 || exit 1
