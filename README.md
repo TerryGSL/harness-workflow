@@ -1,9 +1,11 @@
+<!-- doc-status: rules · owner: 人工 · 触发: skill 能力/护栏变更 -->
 # harness-workflow
 
 精简、工具无关的开发 harness：**几个 markdown 文件 + git hooks + CI + 一个流程层**。
 红线由 git hooks 强制（所以对 Claude、Codex、Cursor、Aider 或人——任何会 commit 的东西都生效）。
 零运行时依赖。唯一的跨工具不变量就是 git-tracked 的 markdown。
-**没有靠自觉更新的状态文件：进度就是 `git log`，唯一强制捕获的东西（memory）由 commit hook 钉死，不靠自觉。**
+**没有靠自觉手动同步的状态文件**：进度就是 `git log`，memory 由 commit hook 钉死。
+**生成类文件**（`docs/code-map.json` 文件地图 / `docs/memory/records-index.md` 记忆索引）由 lockfile 式门**机械保鲜**——人不手抄、漂了 CI 拒。**文档不变死文件**靠每个文档首行 `doc-status` 自描述 + 门强制（见下）。
 
 这是 `harness-workflow.legacy` 的精简重写——那套 16,664 行、17 contracts、8-stage、8-agent 的系统
 实测从未落地（状态文件冻死、LEARNINGS.md 只有一行、0 个 feature 执行 commit）。本 repo 继承名字，砍掉约 90% 的噪音，
@@ -37,11 +39,20 @@ bash install.sh --name X   # 装成别名, 不动旧的
 
 ## 你会得到（默认）
 - `AGENTS.md`（≤60 行，可检查约束 + Mode 行）· `CLAUDE.md`（3 行 stub）
-- `docs/WORKFLOW.md`（干活流程：任务分级 + 各档步骤）· `docs/PROJECT.md`（指针地图）
-- `docs/memory/{cases,decisions}/`
+- `docs/WORKFLOW.md`（干活流程：任务分级 + 各档步骤 + 文档生命周期）· `docs/PROJECT.md`（人看的「为什么」概览，文件清单交给 code-map）
+- `docs/memory/{cases,decisions}/` + `summary.md`（稀疏人工层）
+- **文档自维护**：`scripts/gen-code-map.mjs`（扫 src/ 出 `docs/code-map.json` 事实地图）· `scripts/distill-records.sh`（records→`docs/memory/records-index.md`）· `scripts/verify-{code-map,doc-freshness}.sh`
 - 跨工具指针：`.aider.conf.yml` · `.cursor/rules/harness.mdc`
-- git hooks：pre-commit（密钥）· commit-msg（memory + 证据门）· pre-push（不推 main + 测试 + **风险分级**[HIGH=密钥/依赖/schema/CI，问一次] + force-push 确认）
-- CI：`.github/workflows/harness-gate.yml`（服务端，不可绕过；HIGH 增量推送要 `Risk-Ack:` 留痕）
+- git hooks：pre-commit（密钥 + **code-map 自动保鲜**）· commit-msg（memory + 证据门）· pre-push（不推 main + 测试 + **风险分级** + force-push 确认）
+- CI：`.github/workflows/harness-gate.yml`（服务端不可绕；HIGH 推送要 `Risk-Ack:`；+ **code-map 漂移 / 文档保鲜门**）
+
+## 文档不变死文件（doc-status + 机械门，过漂移测试）
+死文件的根因:门只保证「代码证据 + 每任务 record」,没机制对「活文档(架构图/记忆/设计)」负责。修法**全是护栏,不是提示**:
+- **code-map**:`gen-code-map.mjs` 机械扫 src/ 出 `docs/code-map.json`（文件树/exports/imports/route/locales/配对测试·**无时间戳=确定性**）。pre-commit `--fix` 自动保鲜+staged（不挡自驱循环）,ci-gate **lockfile 严格校验**（漂了拒）。零上下文 agent 读它,不读散文。
+- **记忆合一**:`.harness/records/` 是正源 → `distill-records.sh` 蒸馏成 `docs/memory/records-index.md`;`verify-memory` 认「绑了真 staged 的 Harness-Record」即满足（记录就是记忆）。
+- **doc-status 自描述**:每个管理文档**首行** `<!-- doc-status: generated|living|rules|curated|frozen|archived -->`,`verify-doc-freshness` 强制——没声明=门失败,逼每个文件给「谁维护」的答案。**「冻结」(spec/交接)和「烂掉」就此区分开**。
+- **文档保鲜门**:`verify-doc-freshness.sh` 查纸面承诺死链 / locale 漂移 / 生成产物缺失,跑在 ci-gate + supervisor 每轮。
+> 全过漂移测试:模型完全无视也照样被 hook/CI 拦。设计经 codex 两轮对抗审查。
 
 可选（默认不建）：`WORK.md`（只在跑并行 agent 时）。进度就是 `git log`——没有状态文件要同步。
 

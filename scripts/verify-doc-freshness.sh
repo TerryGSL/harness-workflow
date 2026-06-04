@@ -57,8 +57,9 @@ undeclared=""
 while IFS= read -r f; do
   [ -f "$f" ] || continue
   f="${f#./}"
+  # README 不再豁免(用户提:豁免=必死)。doc-status 是 HTML 注释,GitHub 渲染不可见,无害。
   case "$f" in
-    README.md|docs/archive/*|docs/specs/*|docs/memory/*) continue ;;
+    docs/archive/*|docs/specs/*|docs/memory/*) continue ;;
   esac
   if ! head -1 "$f" 2>/dev/null | grep -qiE "$DOC_STATUS_RE"; then
     undeclared="$undeclared $f"
