@@ -1,27 +1,32 @@
 #!/usr/bin/env bash
 # verify-code-map.sh — 保证 docs/code-map.json 与 src/ 同步(lockfile 式)。
-#   --fix   : 重生成 + git add(pre-commit 用;永不失败,自动保鲜,不挡自驱循环)
-#   (默认) : 严格校验,漂了就 fail(ci-gate 用;抓绕过 hook 的提交)
+#   --fix  : 重生成(atomic temp→mv)+ 仅在变了时 git add(pre-commit;不挡循环)。无 node 本地降级 exit 0。
+#   (默认): 严格校验,写 temp 比对、**不动工作树**。无 node **fail-closed**(CI 必须有 node,漂移门不能形同虚设)。
 set -uo pipefail
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "verify-code-map: not a git repo" >&2; exit 1; }
 cd "$ROOT"
-
-command -v node >/dev/null 2>&1 || { echo "⚠ verify-code-map: node 缺失,跳过(降级不阻断)" >&2; exit 0; }
-[ -f scripts/gen-code-map.mjs ] || { echo "⚠ verify-code-map: 无 gen-code-map.mjs,跳过" >&2; exit 0; }
+[ -f scripts/gen-code-map.mjs ] || exit 0   # 无生成器=本仓不用 code-map,跳过
 
 mode="${1:-check}"
 
 if [ "$mode" = "--fix" ]; then
-  node scripts/gen-code-map.mjs 2>/dev/null || { echo "✗ code-map 生成失败" >&2; exit 1; }
-  git add docs/code-map.json 2>/dev/null || true
+  command -v node >/dev/null 2>&1 || { echo "⚠ verify-code-map(--fix): node 缺失,本地降级跳过" >&2; exit 0; }
+  tmp=$(mktemp) || exit 1
+  if CODE_MAP_OUT="$tmp" node scripts/gen-code-map.mjs 2>/dev/null; then
+    if ! cmp -s "$tmp" docs/code-map.json 2>/dev/null; then
+      mkdir -p docs; mv "$tmp" docs/code-map.json && git add docs/code-map.json 2>/dev/null || true
+    else rm -f "$tmp"; fi
+  else rm -f "$tmp"; echo "✗ code-map 生成失败" >&2; exit 1; fi
   exit 0
 fi
 
-# 严格:重生成后若与已提交内容有差 → 漂了
-node scripts/gen-code-map.mjs 2>/dev/null || { echo "✗ code-map 生成失败" >&2; exit 1; }
-if ! git diff --quiet -- docs/code-map.json 2>/dev/null; then
+# 严格(check):CI/服务端用。无 node = fail-closed(不能让漂移门在缺 node 的 CI 上静默放行)。
+command -v node >/dev/null 2>&1 || { echo "✗ verify-code-map(check): node 缺失,无法校验 code-map 漂移(CI 须装 node)。" >&2; exit 1; }
+tmp=$(mktemp) || exit 1
+CODE_MAP_OUT="$tmp" node scripts/gen-code-map.mjs 2>/dev/null || { rm -f "$tmp"; echo "✗ code-map 生成失败" >&2; exit 1; }
+if ! cmp -s "$tmp" docs/code-map.json 2>/dev/null; then
   echo "✗ code-map 过期:src/ 变了但 docs/code-map.json 没同步。" >&2
   echo "  修:node scripts/gen-code-map.mjs && git add docs/code-map.json" >&2
-  exit 1
+  rm -f "$tmp"; exit 1
 fi
-exit 0
+rm -f "$tmp"; exit 0

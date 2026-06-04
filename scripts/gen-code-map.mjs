@@ -8,11 +8,11 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 const SRC = path.join(ROOT, 'src');
-if (!fs.existsSync(SRC)) {
-  // 无 src/ 的项目:退化扫整个仓库的常见源目录(避免崩)
-  process.stderr.write('gen-code-map: 无 src/,跳过\n');
-  process.exit(0);
-}
+// 输出路径可被 CODE_MAP_OUT 覆盖(verify-code-map 写 temp 比对,不污染工作树)。
+const OUT = process.env.CODE_MAP_OUT || path.join(ROOT, 'docs/code-map.json');
+const HAS_SRC = fs.existsSync(SRC);
+// 无 src/(脚本型/文档型仓):仍写一份「空但合法」的 map,**不 exit 0 跳过**——
+// 否则 verify-doc-freshness「有生成器就要产物」会把这类仓永久卡死(codex P1)。
 
 // 边界目录(应有 @purpose 头):默认空(不强制),项目可在 .harness/code-map.config.json 配 {"boundary": ["src/services", ...]}
 let BOUNDARY = [];
@@ -41,26 +41,43 @@ const purposeOf = (t) => {
   const m = t.slice(0, 1500).match(/@purpose\s+(.+)/);
   return m ? m[1].trim() : '';
 };
-const exportsOf = (t) =>
-  [...t.matchAll(/export\s+(?:async\s+)?(?:function|const|class|type|interface|enum)\s+([A-Za-z0-9_]+)/g)]
-    .map((m) => m[1])
-    .filter((v, i, a) => a.indexOf(v) === i)
-    .sort();
-const localImportsOf = (t) =>
-  [...t.matchAll(/from\s+["']([^"']+)["']/g)]
-    .map((m) => m[1])
+// best-effort 正则抽取(非 AST):命名 + default + `export { a, b as c }`。讲结构够用,别当强事实。
+const exportsOf = (t) => {
+  const named = [...t.matchAll(/export\s+(?:async\s+)?(?:function|const|let|var|class|type|interface|enum)\s+([A-Za-z0-9_$]+)/g)].map((m) => m[1]);
+  const def = /export\s+default\s+(?:async\s+)?(?:function|class)\s+([A-Za-z0-9_$]+)/.exec(t);
+  if (def) named.push(def[1]);
+  else if (/export\s+default\b/.test(t)) named.push('default');
+  // export { a, b as c } —— 取对外名(as 右侧,否则原名)
+  for (const m of t.matchAll(/export\s*\{([^}]*)\}/g)) {
+    for (const part of m[1].split(',')) {
+      const id = part.trim().split(/\s+as\s+/).pop().trim();
+      if (/^[A-Za-z0-9_$]+$/.test(id) && id !== 'default') named.push(id);
+    }
+  }
+  return named.filter((v, i, a) => a.indexOf(v) === i).sort();
+};
+const localImportsOf = (t) => {
+  const out = [...t.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]);
+  // side-effect import "./x" + dynamic import("./x")
+  for (const m of t.matchAll(/import\s+["']([^"']+)["']/g)) out.push(m[1]);
+  for (const m of t.matchAll(/import\(\s*["']([^"']+)["']\s*\)/g)) out.push(m[1]);
+  return out
     .filter((s) => s.startsWith('@/') || s.startsWith('.'))
     .filter((v, i, a) => a.indexOf(v) === i)
     .sort();
+};
 const routeMethodsOf = (t, f) => {
   if (!f.endsWith('/route.ts') && !f.endsWith('/route.js')) return undefined;
-  const ms = ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'].filter((m) =>
-    new RegExp(`export\\s+async\\s+function\\s+${m}\\b`).test(t),
+  // 认 export (async )function GET / export const GET = / export { GET }
+  const ms = ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'HEAD', 'OPTIONS'].filter(
+    (m) =>
+      new RegExp(`export\\s+(?:async\\s+)?(?:function|const|let|var)\\s+${m}\\b`).test(t) ||
+      new RegExp(`export\\s*\\{[^}]*\\b${m}\\b`).test(t),
   );
   return ms.length ? ms : undefined;
 };
 
-const allFiles = walk(SRC).map(rel).sort();
+const allFiles = (HAS_SRC ? walk(SRC) : []).map(rel).sort();
 const fileSet = new Set(allFiles);
 const files = {};
 const boundaryMissingPurpose = [];
@@ -113,8 +130,8 @@ const out = {
   files,
   boundaryMissingPurpose,
 };
-fs.mkdirSync(path.join(ROOT, 'docs'), { recursive: true });
-fs.writeFileSync(path.join(ROOT, 'docs/code-map.json'), JSON.stringify(out, null, 2) + '\n');
+fs.mkdirSync(path.dirname(OUT), { recursive: true });
+fs.writeFileSync(OUT, JSON.stringify(out, null, 2) + '\n');
 process.stderr.write(
   `code-map: ${allFiles.length} files, ${Object.keys(routes).length} routes, locales=[${locales.join(',')}], boundary-missing-@purpose=${boundaryMissingPurpose.length}\n`,
 );

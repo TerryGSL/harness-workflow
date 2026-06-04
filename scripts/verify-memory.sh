@@ -30,8 +30,10 @@ mem_staged=$(printf '%s\n' "$staged" | grep -E "$MEMORY_FILE_RE" || true)
 [ -n "$mem_staged" ] && exit 0
 
 # 记忆合一:.harness/records/<id>.md = 每任务沉淀 = 记忆正源(distill-records.sh 蒸馏成
-# docs/memory/records-index.md)。绑了 Harness-Record 即满足 memory 门——记录就是记忆。
-if grep -qiE '^Harness-Record:[[:space:]]*[0-9A-Za-z._-]+' "$MSG_FILE"; then
+# docs/memory/records-index.md)。绑了 Harness-Record **且该 record 文件真 staged**才算——
+# 光写 'Harness-Record: x' 不带真 record 文件不顶用(codex P2:防空头绕过)。
+rid=$(grep -ioE '^Harness-Record:[[:space:]]*[0-9A-Za-z._-]+' "$MSG_FILE" | head -1 | sed -E 's/^[Hh]arness-[Rr]ecord:[[:space:]]*//')
+if [ -n "$rid" ] && printf '%s\n' "$staged" | grep -qxE "\.harness/records/${rid}\.md"; then
   exit 0
 fi
 

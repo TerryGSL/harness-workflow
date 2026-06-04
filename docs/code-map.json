@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "scripts/gen-code-map.mjs",
+  "counts": {
+    "files": 0,
+    "routes": 0
+  },
+  "locales": [],
+  "routes": {},
+  "files": {},
+  "boundaryMissingPurpose": []
+}

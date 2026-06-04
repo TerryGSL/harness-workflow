@@ -39,33 +39,35 @@ if [ -f docs/code-map.json ] && command -v node >/dev/null 2>&1; then
   fi
 fi
 
-# 3. 生成文档必须存在(有脚本就得有产物)
-for pair in "scripts/gen-code-map.mjs:docs/code-map.json" "scripts/distill-records.sh:docs/memory/records-index.md"; do
-  s="${pair%%:*}"; o="${pair##*:}"
-  if [ -f "$s" ] && [ ! -f "$o" ]; then
-    echo "✗ doc-freshness: $s 存在但产物 $o 缺失。跑一次生成它。" >&2
-    fail=1
-  fi
-done
+# 3. 生成文档必须存在,**但只在对应「源」存在时要求**(否则无 src/ 的脚本/文档仓被永久卡死·codex P1)。
+#    code-map ← src/ 存在才要;records-index ← .harness/records/ 有记录才要。
+if [ -f scripts/gen-code-map.mjs ] && [ -d src ] && [ ! -f docs/code-map.json ]; then
+  echo "✗ doc-freshness: 有 src/ 和 gen-code-map.mjs 但缺 docs/code-map.json。跑:node scripts/gen-code-map.mjs" >&2
+  fail=1
+fi
+if [ -f scripts/distill-records.sh ] && ls .harness/records/*.md >/dev/null 2>&1 && [ ! -f docs/memory/records-index.md ]; then
+  echo "✗ doc-freshness: 有 .harness/records 但缺 docs/memory/records-index.md。跑:bash scripts/distill-records.sh" >&2
+  fail=1
+fi
 
-# 4. doc-status 自描述门:每个「管理文档」首部必须声明 <!-- doc-status: X -->。
-#    管理范围 = 仓库根 *.md + docs/*.md(单层)。豁免:docs/specs/**(frozen 约定)、
-#    docs/archive/**、docs/memory/**(有独立机制)、README.md(对外,免)、code-map.json(json 非 md)。
-DOC_STATUS_RE='doc-status:[[:space:]]*(generated|living|rules|curated|frozen|archived)'
+# 4. doc-status 自描述门:每个「管理文档」**首行**必须是 <!-- doc-status: X -->(锚定首行,防正文骗过·codex P2)。
+#    管理范围 = 根层 *.md(不递归)+ docs/ 下递归。豁免:README / docs/{archive,specs,memory}。
+DOC_STATUS_RE='^[[:space:]]*<!--[[:space:]]*doc-status:[[:space:]]*(generated|living|rules|curated|frozen|archived)\b'
 undeclared=""
 while IFS= read -r f; do
   [ -f "$f" ] || continue
+  f="${f#./}"
   case "$f" in
     README.md|docs/archive/*|docs/specs/*|docs/memory/*) continue ;;
   esac
-  if ! head -3 "$f" 2>/dev/null | grep -qiE "$DOC_STATUS_RE"; then
+  if ! head -1 "$f" 2>/dev/null | grep -qiE "$DOC_STATUS_RE"; then
     undeclared="$undeclared $f"
   fi
-done < <(ls -1 *.md docs/*.md 2>/dev/null)
+done < <( { find . -maxdepth 1 -name '*.md' -not -name '._*'; [ -d docs ] && find docs -name '*.md' -not -name '._*'; } 2>/dev/null | sort -u )
 if [ -n "$undeclared" ]; then
-  echo "✗ doc-freshness: 以下文档没声明 doc-status(不知道谁维护→迟早成死文件):" >&2
+  echo "✗ doc-freshness: 以下文档首行没声明 doc-status(不知道谁维护→迟早成死文件):" >&2
   for f in $undeclared; do echo "    $f" >&2; done
-  echo "  修:首行加 <!-- doc-status: generated|living|rules|curated|frozen|archived -->(见 docs/WORKFLOW.md)。" >&2
+  echo "  修:**首行**加 <!-- doc-status: generated|living|rules|curated|frozen|archived -->(见 docs/WORKFLOW.md)。" >&2
   fail=1
 fi
 
