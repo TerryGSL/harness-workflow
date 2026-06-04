@@ -29,10 +29,13 @@ copy_if_absent "$HW_SRC/templates/memory-summary.md" "docs/memory/summary.md"
 
 # --- tool-owned scripts + hooks (refreshed each init) ---
 mkdir -p scripts .githooks
-for s in gate-lib.sh verify-memory.sh verify-evidence.sh verify-governance.sh ci-gate.sh doctor.sh state.sh brief.sh record.sh; do
+for s in gate-lib.sh verify-memory.sh verify-evidence.sh verify-governance.sh ci-gate.sh doctor.sh state.sh brief.sh record.sh \
+         verify-code-map.sh verify-doc-freshness.sh distill-records.sh; do
   [ -f "$HW_SRC/scripts/$s" ] && cp "$HW_SRC/scripts/$s" "scripts/$s" || true
 done
-chmod +x scripts/*.sh
+# 文档自维护:code-map 生成器(.mjs,需 node)
+[ -f "$HW_SRC/scripts/gen-code-map.mjs" ] && cp "$HW_SRC/scripts/gen-code-map.mjs" "scripts/gen-code-map.mjs" || true
+chmod +x scripts/*.sh scripts/gen-code-map.mjs 2>/dev/null || true
 for h in pre-commit commit-msg pre-push; do
   cp "$HW_SRC/githooks/$h" ".githooks/$h"; chmod +x ".githooks/$h"
 done

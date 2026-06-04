@@ -29,6 +29,12 @@ significant=$(printf '%s\n' "$staged" | grep -E "$SIGNIFICANT_RE" || true)
 mem_staged=$(printf '%s\n' "$staged" | grep -E "$MEMORY_FILE_RE" || true)
 [ -n "$mem_staged" ] && exit 0
 
+# 记忆合一:.harness/records/<id>.md = 每任务沉淀 = 记忆正源(distill-records.sh 蒸馏成
+# docs/memory/records-index.md)。绑了 Harness-Record 即满足 memory 门——记录就是记忆。
+if grep -qiE '^Harness-Record:[[:space:]]*[0-9A-Za-z._-]+' "$MSG_FILE"; then
+  exit 0
+fi
+
 # 修复类提交(fix:/fix( )必须留下坑的解法 —— 修了 bug/坑却 Memory: none,坑就流失了。
 # 没记 case 文件(上面已 exit)且首行是 fix 且 Memory 是 none/trivial → 拒。要么记 case,要么写实质一句话。
 if head -1 "$MSG_FILE" | grep -qiE '^fix[ (:]' && grep -qiE '^Memory:[[:space:]]*(none|trivial|无)[[:space:]]*$' "$MSG_FILE"; then

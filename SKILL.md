@@ -44,3 +44,10 @@ description: 持续开发工作流。代码任务(做/加/修/改/实现/重构/
 
 ## 护栏(机械兜底)
 git hooks(密钥/不推 main/memory/证据门)+ CI(ci-gate 服务端不可绕)+ verify-governance(入口行数封顶)。**流程可漂,红线和证据门越不过。** state.json 只是恢复缓存,门禁不读它。
+
+## 文档自维护(治死文档,机械不靠自觉)
+**原则:烂不掉的交给机器(自动生成+lockfile 校验);讲"为什么"的贴着代码且窄范围。** 散文文档必漂,生成的事实图不漂。
+- **code-map**:`scripts/gen-code-map.mjs` 扫 src/ 出 `docs/code-map.json`(事实:文件树/exports/imports/route 方法/locales/配对测试,**无时间戳=确定性**)。零上下文 agent 冷启动读它,不读散文 map。`scripts/verify-code-map.sh --fix`(pre-commit:src 改了自动重生成+staged,**永不挡循环**)/ 严格(ci-gate 抓绕过)。文件职责 = 文件头 `/** @purpose ... */`,只对边界目录软统计(`.harness/code-map.config.json` 配 `{"boundary":[...]}`),不全量硬卡。
+- **记忆合一**:`.harness/records/` = 正源;`scripts/distill-records.sh` 蒸馏成 `docs/memory/records-index.md`。`verify-memory.sh` 认 `Harness-Record` 即满足 memory 门(记录就是记忆,不必凑 `Memory:` 行)。
+- **文档保鲜**:`scripts/verify-doc-freshness.sh`(纸面承诺死链/locale 漂移/生成产物缺失),跑在 ci-gate + supervisor 每轮(机械,不靠自觉)。
+- 用 autonomous-dev-loop 时,把 supervisor 指令(AUTODEV-SUPERVISOR.md)绑一条:每轮跑 `gen-code-map + distill-records + verify-doc-freshness`,@purpose 分批补边界文件。

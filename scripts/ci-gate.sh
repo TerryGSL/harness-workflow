@@ -86,7 +86,17 @@ if [ -x "$DIR/classify-risk.sh" ] && [ -n "$BASE" ] && git rev-parse -q --verify
   fi
 fi
 
-# 5. 入口文件行数治理(单一规则源,与 pre-commit 同调)。CI 已 checkout,直接对工作树跑。
+# 5. code-map 同步(服务端不可绕):重生成 docs/code-map.json,与已提交内容有差=漂了。
+if [ -x "$DIR/verify-code-map.sh" ]; then
+  ( cd "$(git rev-parse --show-toplevel)" && bash scripts/verify-code-map.sh ) || fail=1
+fi
+
+# 6. 文档保鲜(服务端不可绕):纸面承诺死链/locale 漂移/生成产物缺失。
+if [ -x "$DIR/verify-doc-freshness.sh" ]; then
+  ( cd "$(git rev-parse --show-toplevel)" && bash scripts/verify-doc-freshness.sh ) || fail=1
+fi
+
+# 7. 入口文件行数治理(单一规则源,与 pre-commit 同调)。CI 已 checkout,直接对工作树跑。
 if [ -x "$DIR/verify-governance.sh" ]; then
   ( cd "$(git rev-parse --show-toplevel)" && bash scripts/verify-governance.sh ) || fail=1
 fi

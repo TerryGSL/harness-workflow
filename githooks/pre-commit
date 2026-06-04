@@ -14,6 +14,13 @@ if [ -n "$blocked" ]; then
   exit 1
 fi
 
+# code-map 自动保鲜:src/ 变了就重生成 docs/code-map.json 并 staged(--fix 永不失败,不挡自驱循环)。
+if [ -x "$ROOT/scripts/verify-code-map.sh" ]; then
+  if printf '%s\n' "$staged" | grep -qE '^src/.*\.([jt]sx?)$'; then
+    bash "$ROOT/scripts/verify-code-map.sh" --fix >&2 || true
+  fi
+fi
+
 # 入口文件行数治理（单一规则源；存在才查）
 if [ -r "$ROOT/scripts/verify-governance.sh" ]; then
   bash "$ROOT/scripts/verify-governance.sh" >&2 || exit 1
