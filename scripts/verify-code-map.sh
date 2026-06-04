@@ -6,6 +6,7 @@ set -uo pipefail
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "verify-code-map: not a git repo" >&2; exit 1; }
 cd "$ROOT"
 [ -f scripts/gen-code-map.mjs ] || exit 0   # 无生成器=本仓不用 code-map,跳过
+[ -d src ] || exit 0                          # 无 src/=脚本/文档仓,不需要 code-map 门(codex P1:无src仓别卡)
 
 mode="${1:-check}"
 

@@ -33,7 +33,8 @@ mem_staged=$(printf '%s\n' "$staged" | grep -E "$MEMORY_FILE_RE" || true)
 # docs/memory/records-index.md)。绑了 Harness-Record **且该 record 文件真 staged**才算——
 # 光写 'Harness-Record: x' 不带真 record 文件不顶用(codex P2:防空头绕过)。
 rid=$(grep -ioE '^Harness-Record:[[:space:]]*[0-9A-Za-z._-]+' "$MSG_FILE" | head -1 | sed -E 's/^[Hh]arness-[Rr]ecord:[[:space:]]*//')
-if [ -n "$rid" ] && printf '%s\n' "$staged" | grep -qxE "\.harness/records/${rid}\.md"; then
+# -qxF 字面整行匹配:rid 里的 . 不当通配(codex P2:防 abc.def 误配 abcXdef.md)。
+if [ -n "$rid" ] && printf '%s\n' "$staged" | grep -qxF ".harness/records/${rid}.md"; then
   exit 0
 fi
 
