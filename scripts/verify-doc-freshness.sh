@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # verify-doc-freshness.sh — 专管"活文档"不烂(supervisor 每轮 + ci-gate 跑)。
-# 查三样机械可判的:
-#   1. 纸面承诺:CLAUDE.md/AGENTS.md 里指向 docs/* 的文件必须真存在(治 STATE.json/WALKTHROUGH 死链)
+# 查四样机械可判的:
+#   1. 纸面承诺:CLAUDE.md/AGENTS.md 里指向 docs/* 的文件必须真存在(治死链)
 #   2. locale 漂移:docs/code-map.json 的 locales 必须 == src 真实 messages 目录
 #   3. 生成文档存在:code-map.json / records-index.md 必须在(光有脚本不算)
+#   4. doc-status 自描述:每个管理文档首部必须声明 <!-- doc-status: X -->(治死文件——
+#      没声明=不知道谁维护=迟早烂;声明了「冻结」和「烂掉」才区分得开)。
 # 不查"内容对不对"(那要 LLM,会烂);只查机械事实。
+# DOC_STATUS 合法值:generated|living|rules|curated|frozen|archived(见 docs/WORKFLOW.md)。
 set -uo pipefail
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || { echo "doc-freshness: not a git repo" >&2; exit 1; }
 cd "$ROOT"
@@ -44,5 +47,26 @@ for pair in "scripts/gen-code-map.mjs:docs/code-map.json" "scripts/distill-recor
     fail=1
   fi
 done
+
+# 4. doc-status 自描述门:每个「管理文档」首部必须声明 <!-- doc-status: X -->。
+#    管理范围 = 仓库根 *.md + docs/*.md(单层)。豁免:docs/specs/**(frozen 约定)、
+#    docs/archive/**、docs/memory/**(有独立机制)、README.md(对外,免)、code-map.json(json 非 md)。
+DOC_STATUS_RE='doc-status:[[:space:]]*(generated|living|rules|curated|frozen|archived)'
+undeclared=""
+while IFS= read -r f; do
+  [ -f "$f" ] || continue
+  case "$f" in
+    README.md|docs/archive/*|docs/specs/*|docs/memory/*) continue ;;
+  esac
+  if ! head -3 "$f" 2>/dev/null | grep -qiE "$DOC_STATUS_RE"; then
+    undeclared="$undeclared $f"
+  fi
+done < <(ls -1 *.md docs/*.md 2>/dev/null)
+if [ -n "$undeclared" ]; then
+  echo "✗ doc-freshness: 以下文档没声明 doc-status(不知道谁维护→迟早成死文件):" >&2
+  for f in $undeclared; do echo "    $f" >&2; done
+  echo "  修:首行加 <!-- doc-status: generated|living|rules|curated|frozen|archived -->(见 docs/WORKFLOW.md)。" >&2
+  fail=1
+fi
 
 exit "$fail"

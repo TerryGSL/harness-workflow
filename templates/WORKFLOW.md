@@ -1,3 +1,4 @@
+<!-- doc-status: rules · owner: 人工 · 触发: 工作流规则变更 -->
 # WORKFLOW — 参考卡（提示，不是引擎）
 
 > 红线（密钥 / 不推 main / 改代码记 memory / CI 跑测试）由 git hook + CI **机械强制**，不靠你读这里。
@@ -25,3 +26,13 @@ bug→测试或 `No-Repro:`；feature→`Plan:`+`Reviewed-by:`+`Brainstormed-by:
 
 ## 多 agent 并行（没并行就忽略）
 各自 worktree + 分支、文件不相交；失败收尾要么 commit 要么 `git restore`，不留脏树。
+
+## 文档不变死文件（doc-status 自描述 + 机械门）
+每个文档**首行声明 `<!-- doc-status: X -->`**,门(`verify-doc-freshness.sh`)强制——没声明=失败,逼你给每个文件「谁维护」的答案。**「冻结」和「烂掉」就此区分开。** 状态:
+- `generated`：机器生成(code-map.json / records-index.md),lockfile 校验同步,**人别手改**。
+- `living`：随现实变(PROJECT.md / DEV-PLAN.md),supervisor 每轮刷;stale 由 supervisor 建任务,不硬卡。
+- `rules`：稳定治理(AGENTS/CLAUDE/WORKFLOW),只在规则变时改。
+- `curated`：稀疏人工知识(memory/summary·cases·decisions),**空也合法**。
+- `frozen`：已完成的 spec / 交接文档(docs/specs/* / 跨 agent 协调),冻结存档,不维护。
+- `archived`：退役 → 移到 docs/archive/。
+新增文档**第一件事**:首行写对 doc-status。机器正源永远优先散文(文件清单看 code-map,不手抄)。

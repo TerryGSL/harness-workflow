@@ -1,7 +1,8 @@
+<!-- doc-status: curated · owner: 人工/supervisor · 触发: 形成跨需求稳定结论时 · 稀疏正常,空也合法 -->
 # 项目稳定经验摘要（跨需求高复用，新需求开工前先读这里）
 
-> 只放"下次类似需求值得先读"的稳定规律，不放一次性流水。明细在 docs/memory/cases|decisions/，
-> 历史索引在 .harness/change-index.jsonl（渐进下钻：先读这页 → 命中再翻 cases/记录）。
+> **三层记忆,别混**:① 全量每任务索引 = `docs/memory/records-index.md`(机械生成自 .harness/records,**永不漂**,先看它)② 本页 = 人工提炼的「跨需求稳定规律」(稀疏,只放下次值得先读的)③ 明细 = docs/memory/cases|decisions/。
+> 本页**空也合法**(curated·稀疏);别硬凑。形成稳定结论才追加一行。
 
 ## 设计类（架构/取舍稳定结论）
 - <暂无；形成稳定经验后追加一行>

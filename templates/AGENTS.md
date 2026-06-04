@@ -1,3 +1,4 @@
+<!-- doc-status: rules · owner: 人工 · 触发: 命令/红线/工作流变更 -->
 # Agent 指南
 
 > 唯一事实源（Codex/Cursor/Aider 直接读；Claude 经 CLAUDE.md stub 读）。
