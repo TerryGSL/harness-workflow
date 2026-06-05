@@ -1,3 +1,4 @@
+<!-- doc-status: curated · owner: human · 触发: 踩坑新增时手写 -->
 # codex exec 因 MCP OAuth 过期卡死 → 用 `-c mcp_servers={}` 禁用
 
 Type: case / 编码踩坑

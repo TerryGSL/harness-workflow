@@ -11,6 +11,7 @@ out="docs/memory/records-index.md"
 tmp=$(mktemp)
 
 {
+  echo "<!-- doc-status: generated · owner: distill-records.sh · 触发: .harness/records 变更自动蒸馏·勿手改 -->"
   echo "# Records 索引（机械生成自 .harness/records，勿手改）"
   echo
   echo "> 正源 = \`.harness/records/<id>.md\`(每任务沉淀)。本页 = 可检索索引。"

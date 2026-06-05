@@ -51,15 +51,17 @@ if [ -f scripts/distill-records.sh ] && ls .harness/records/*.md >/dev/null 2>&1
 fi
 
 # 4. doc-status 自描述门:每个「管理文档」**首行**必须是 <!-- doc-status: X -->(锚定首行,防正文骗过·codex P2)。
-#    管理范围 = 根层 *.md(不递归)+ docs/ 下递归。豁免:README / docs/{archive,specs,memory}。
-DOC_STATUS_RE='^[[:space:]]*<!--[[:space:]]*doc-status:[[:space:]]*(generated|living|rules|curated|frozen|archived)\b'
+#    管理范围 = 根层 *.md(不递归)+ docs/ 下递归。仅豁免 docs/archive(归档=故意冻死)。
+#    ★specs/memory 不再豁免(用户提:豁免=必死。specs=frozen、memory cases/decisions=curated、records-index=generated,都该自描述)。
+DOC_STATUS_RE='^[[:space:]]*<!--[[:space:]]*doc-status:[[:space:]]*(generated|living|rules|curated|frozen|archived)([[:space:]]|-->)'
 undeclared=""
 while IFS= read -r f; do
   [ -f "$f" ] || continue
   f="${f#./}"
-  # README 不再豁免(用户提:豁免=必死)。doc-status 是 HTML 注释,GitHub 渲染不可见,无害。
+  # README 不豁免、specs/memory 不豁免(用户提:豁免=必死)。doc-status 是 HTML 注释,GitHub 渲染不可见,无害。
   case "$f" in
-    docs/archive/*|docs/specs/*|docs/memory/*) continue ;;
+    docs/archive/*) continue ;;          # 归档=故意冻死
+    SKILL.md) continue ;;                 # skill 定义文件必须 YAML frontmatter(---)在首行,塞 HTML 注释会破坏加载器
   esac
   if ! head -1 "$f" 2>/dev/null | grep -qiE "$DOC_STATUS_RE"; then
     undeclared="$undeclared $f"
