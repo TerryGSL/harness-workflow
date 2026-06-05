@@ -15,6 +15,9 @@ cmd="${1:-}"; shift 2>/dev/null || true
 case "$cmd" in
   start)
     type="${1:-feature}"; slug="${2:-task}"
+    # slug 限安全字符(防文件名含换行/markdown 注入进 summary·codex P2)
+    slug=$(printf '%s' "$slug" | tr -c 'a-zA-Z0-9._-' '-' | sed 's/-\{2,\}/-/g; s/^-//; s/-$//')
+    [ -n "$slug" ] || slug=task
     id="$(date +%Y%m%d)-$slug"
     mkdir -p "$REC"; f="$REC/$id.md"
     if [ -e "$f" ]; then echo "$id"; exit 0; fi
@@ -39,8 +42,9 @@ case "$cmd" in
   done)
     id="${1:-}"; f="$REC/$id.md"
     [ -f "$f" ] || { echo "✗ record.sh done: 找不到 $f" >&2; exit 1; }
-    # 校验关键段落非空非模板(python 解析,robust)
-    python3 - "$f" "Changed & Why" "Tests" <<'PY' || exit 1
+    # 校验关键段落非空非模板(python 解析,robust)。Decisions 也必填——逼每个任务记一句取舍
+    # (真没非显然取舍就写「无」),distill 会把它抽进 docs/memory/summary.md,治"经验层永远空"。
+    python3 - "$f" "Changed & Why" "Tests" "Decisions" <<'PY' || exit 1
 import sys,re
 f=open(sys.argv[1],encoding="utf-8").read()
 secs=sys.argv[2:]

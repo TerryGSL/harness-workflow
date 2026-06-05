@@ -63,7 +63,27 @@ list_dir() {  # $1=目录 $2=空时文案
   echo
   echo "## 案例类（实现/踩坑稳定结论 · docs/memory/cases/）"
   list_dir docs/memory/cases "（暂无；写进 docs/memory/cases/ 即自动入此索引）"
+  echo
+  echo "## 决策蒸馏（各任务 record 的非显然取舍 · 新→旧 · 自动抽自 .harness/records）"
+  echo "> 不用单独写 cases/decisions——把取舍写进 record 的 \`## Decisions\` 段(record.sh done 强制非空),自动汇到这里。"
+  dn=0; shown=0; CAP=40
+  while IFS= read -r rf; do
+    [ -f "$rf" ] || continue
+    # Decisions 段:留非空、非占位行(保留多行续行,不只 '- ' 行·codex P2)
+    decs=$(awk '/^## Decisions/{flag=1;next} /^## /{flag=0} flag' "$rf" \
+      | grep -vE '^[[:space:]]*$' \
+      | grep -viE '^[[:space:]]*-?[[:space:]]*(<TODO>|无|none|n/a)[[:space:]]*$')
+    [ -n "$decs" ] || continue
+    dn=$((dn+1))
+    if [ "$shown" -lt "$CAP" ]; then
+      echo "- \`$(basename "$rf" .md)\`"                    # id 作 code span,防 slug 里的 markdown 注入
+      printf '%s\n' "$decs" | head -12 | sed 's/^/  /'      # 整段缩进 2 格(保留 bullet/续行),每 record 封顶 12 行
+      shown=$((shown+1))
+    fi
+  done < <(find .harness/records -maxdepth 1 -name '*.md' ! -name '._*' 2>/dev/null | sort -r)
+  [ "$dn" = 0 ] && echo "- （暂无；record 的 \`## Decisions\` 写了取舍就自动入此）"
+  [ "$dn" -gt "$CAP" ] && { echo; echo "_仅显最近 $CAP/$dn 条有取舍的 record;更早翻 .harness/records/。_"; }
 } > "$stmp"
 mv "$stmp" "$sout"
 
-echo "distill-records: records-index($(grep -c '^- ' "$out") 条) + summary(cases/decisions 索引) 已重生成" >&2
+echo "distill-records: records-index($(grep -c '^- ' "$out") 条) + summary(cases/decisions + 决策蒸馏) 已重生成" >&2
