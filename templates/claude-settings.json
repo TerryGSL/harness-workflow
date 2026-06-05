@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/relocate-mem-injection.sh\" AGENTS.md CLAUDE.md >/dev/null 2>&1 || true"
+          }
+        ]
+      }
+    ]
+  }
+}

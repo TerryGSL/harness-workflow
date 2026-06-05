@@ -1,0 +1,7 @@
+{
+  "_comment": "living 文档合同。每个 doc-status: living 的文档必须在此声明 triggers(触发刷新的源路径前缀,git pathspec)+SLA(落后多少次提交 warn/fail)。verify-living-docs.sh 读它:文档落后其 triggers 太多提交就报警/CI fail。不想机械维护就把该文档 doc-status 改成 frozen/curated/rules 并从这里删。阈值按项目节奏调。",
+  "_note": "默认注册了 PROJECT.md(它是 doc-status: living)。新增 living 文档照此格式加;改成别的 doc-status 就从这删。",
+  "docs": [
+    { "doc": "docs/PROJECT.md", "triggers": ["src"], "warnCommits": 25, "failCommits": 80 }
+  ]
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pre-commit: refuse to commit secret/credential files. Pattern shared via gate-lib.sh.
+# pre-commit: 密钥拦截 + 文档/语义层自动保鲜(全部 --fix 式,永不挡自驱循环,只在真违例时拦)。
 set -uo pipefail
 ROOT=$(git rev-parse --show-toplevel)
 SECRET_RE='(^|/)\.env($|\.)|(^|/)secrets?/'   # conservative fallback if lib missing
@@ -14,19 +14,57 @@ if [ -n "$blocked" ]; then
   exit 1
 fi
 
-# code-map 自动保鲜:src/ 变了就重生成 docs/code-map.json 并 staged(--fix 永不失败,不挡自驱循环)。
-if [ -x "$ROOT/scripts/verify-code-map.sh" ]; then
-  if printf '%s\n' "$staged" | grep -qE '^src/.*\.([jt]sx?)$'; then
-    bash "$ROOT/scripts/verify-code-map.sh" --fix >&2 || true
+# claude-mem 注入剥离:从暂存 blob 把 <claude-mem-context> 块剥掉,根治 AGENTS.md/CLAUDE.md 被周期性污染。
+# (标签不配对会 exit 1 逼人工处理——fail-closed,绝不误删正文。)
+if [ -x "$ROOT/scripts/strip-mem-injection.sh" ]; then
+  bash "$ROOT/scripts/strip-mem-injection.sh" AGENTS.md CLAUDE.md || exit 1
+fi
+
+# code-map 自动保鲜:src/ 变了就重生成 docs/code-map.json 并 staged(--fix 永不失败,不挡循环)。
+# 含**删除**(--diff-filter 带 D):删 src 文件也会改 code-map/架构,不重生成 → CI 漂移 fail(codex P1)。
+# 含 .harness/code-map.config.json:改边界配置会变 boundaryMissingPurpose/架构(codex P2)。
+staged_fresh=$(git diff --cached --name-only --diff-filter=ACMRD 2>/dev/null || true)
+src_changed=0
+printf '%s\n' "$staged_fresh" | grep -qE '^src/.*\.([jt]sx?)$' && src_changed=1
+printf '%s\n' "$staged_fresh" | grep -qxF '.harness/code-map.config.json' && src_changed=1
+if [ -x "$ROOT/scripts/verify-code-map.sh" ] && [ "$src_changed" = 1 ]; then
+  bash "$ROOT/scripts/verify-code-map.sh" --fix >&2 || true
+fi
+
+# 架构摘要自动保鲜:code-map 刚刷新→重生成人类可读的 docs/ARCHITECTURE.md 并 staged。
+if [ "$src_changed" = 1 ] && [ -f "$ROOT/scripts/gen-architecture-summary.mjs" ] && command -v node >/dev/null 2>&1; then
+  ( cd "$ROOT" && node scripts/gen-architecture-summary.mjs >&2 2>/dev/null ) && git add docs/ARCHITECTURE.md 2>/dev/null || true
+fi
+
+# @purpose 棘轮门:边界文件缺职责数升高就拦(逼写一句"干啥的");下降就棘轮基准。读刚刷新的 code-map。
+if [ -x "$ROOT/scripts/verify-purpose.sh" ] && [ "$src_changed" = 1 ]; then
+  bash "$ROOT/scripts/verify-purpose.sh" --fix >&2 || exit 1
+fi
+
+# 记忆索引自动保鲜:动了 .harness/records/ 或 docs/memory/{cases,decisions}/ 就重蒸馏
+# records-index.md + summary.md 并 staged(summary 不再是死的 human 空占位)。
+if [ -x "$ROOT/scripts/distill-records.sh" ]; then
+  # 用 staged_fresh(含删除 D):删 case/decision 也要重蒸馏,否则 summary 留陈旧条目(codex P2)。
+  if printf '%s\n' "$staged_fresh" | grep -qE '^\.harness/records/.*\.md$|^docs/memory/(cases|decisions)/.*\.md$'; then
+    bash "$ROOT/scripts/distill-records.sh" >/dev/null 2>&1 \
+      && git add docs/memory/records-index.md docs/memory/summary.md 2>/dev/null || true
   fi
 fi
 
-# records-index 自动保鲜:本次提交动了 .harness/records/ 就重蒸馏 docs/memory/records-index.md 并 staged
-# (像 code-map 一样每次同步,不再等 supervisor 轮·永不失败,不挡循环)。
-if [ -x "$ROOT/scripts/distill-records.sh" ]; then
-  if printf '%s\n' "$staged" | grep -qE '^\.harness/records/.*\.md$'; then
-    bash "$ROOT/scripts/distill-records.sh" >/dev/null 2>&1 && git add docs/memory/records-index.md 2>/dev/null || true
-  fi
+# living 文档新鲜度:只警告(不挡循环);CI 才在落后过多时 fail。
+if [ -x "$ROOT/scripts/verify-living-docs.sh" ]; then
+  bash "$ROOT/scripts/verify-living-docs.sh" --fix >&2 || true
+fi
+
+# 文档泛滥防复发:根层非白名单 *.md 警告(CI 才 fail)。
+if [ -x "$ROOT/scripts/verify-doc-sprawl.sh" ]; then
+  bash "$ROOT/scripts/verify-doc-sprawl.sh" --fix >&2 || true
+fi
+
+# 文档保鲜早警告:死链/locale 漂/缺 doc-status 头——只警告不挡循环(CI 才硬 fail)。
+# 治"新建文档没写 doc-status,过了 pre-commit 一路漂到 CI 才被抓"。
+if [ -x "$ROOT/scripts/verify-doc-freshness.sh" ]; then
+  bash "$ROOT/scripts/verify-doc-freshness.sh" >&2 || echo "  ↑ 文档保鲜警告(CI 会 hard-fail,现在修好过)" >&2
 fi
 
 # 入口文件行数治理（单一规则源；存在才查）

@@ -47,7 +47,9 @@ git hooks(密钥/不推 main/memory/证据门)+ CI(ci-gate 服务端不可绕)+ 
 
 ## 文档自维护(治死文档,机械不靠自觉)
 **原则:烂不掉的交给机器(自动生成+lockfile 校验);讲"为什么"的贴着代码且窄范围。** 散文文档必漂,生成的事实图不漂。
-- **code-map**:`scripts/gen-code-map.mjs` 扫 src/ 出 `docs/code-map.json`(事实:文件树/exports/imports/route 方法/locales/配对测试,**无时间戳=确定性**)。零上下文 agent 冷启动读它,不读散文 map。`scripts/verify-code-map.sh --fix`(pre-commit:src 改了自动重生成+staged,**永不挡循环**)/ 严格(ci-gate 抓绕过)。文件职责 = 文件头 `/** @purpose ... */`,只对边界目录软统计(`.harness/code-map.config.json` 配 `{"boundary":[...]}`),不全量硬卡。
-- **记忆合一**:`.harness/records/` = 正源;`scripts/distill-records.sh` 蒸馏成 `docs/memory/records-index.md`。`verify-memory.sh` 认 `Harness-Record` 即满足 memory 门(记录就是记忆,不必凑 `Memory:` 行)。
-- **文档保鲜**:`scripts/verify-doc-freshness.sh`(纸面承诺死链/locale 漂移/生成产物缺失),跑在 ci-gate + supervisor 每轮(机械,不靠自觉)。
-- 用 autonomous-dev-loop 时,把 supervisor 指令(AUTODEV-SUPERVISOR.md)绑一条:每轮跑 `gen-code-map + distill-records + verify-doc-freshness`,@purpose 分批补边界文件。
+- **code-map(机器事实图)**:`gen-code-map.mjs` 扫 src/ 出 `docs/code-map.json`(文件树/exports/imports/route/locales/配对测试,**无时间戳=确定性**)。`verify-code-map.sh --fix`(pre-commit 自动重生成+staged,**永不挡循环**)/ 严格(ci-gate 抓绕过)。
+- **@purpose(文件职责)+ 架构摘要 —— 治"不知道每个文件干啥"**:边界目录(`.harness/code-map.config.json` 的 `boundary`)文件首行写 `/** @purpose <一句职责> */`。`verify-purpose.sh` **棘轮门**(缺失路径集只减不增,基准 `.harness/purpose-baseline`):新增/改动边界文件没写就 pre-commit/CI 拦,补旧的不能抵新缺。`gen-architecture-summary.mjs` 从 code-map+@purpose 机械生成**人类可读** `docs/ARCHITECTURE.md`(顶层版图/子系统职责表/路由表),ci `cmp` 防手改漂移。
+- **记忆合一**:`.harness/records/` = 正源;`distill-records.sh` 蒸馏成 `docs/memory/records-index.md`(records 索引)**+ `docs/memory/summary.md`**(从 cases/decisions 蒸馏的"跨需求先读"索引,**generated 不再是 human 空占位**)。`verify-memory.sh` 认 `Harness-Record` 即满足 memory 门。
+- **活文档保鲜门 —— 治"文档停在几天前"**:`verify-doc-freshness.sh`(死链/locale 漂/缺 doc-status 头)pre-commit 早警告 + ci 硬 fail。`verify-living-docs.sh`+`.harness/living-docs.json`:标 `living` 的文档**必须注册 triggers+SLA**,落后触发源提交太多 → warn(pre-commit)/fail(ci);不维护就降 frozen/curated。`verify-doc-sprawl.sh`:根层 *.md 白名单门(防文档堆根目录复发)。
+- **事实源防污染**:`strip-mem-injection.sh`(pre-commit 从暂存 blob 剥 claude-mem 注入块,入库恒干净)+ `relocate-mem-injection.sh`(SessionStart hook,把注入挪到 gitignored `.harness/runtime/`,工作树也干净)→ AGENTS.md/CLAUDE.md 不被周期性污染。
+- 用 autonomous-dev-loop 时,supervisor 每轮跑 `gen-code-map + gen-architecture-summary + distill-records + verify-doc-freshness + verify-purpose + verify-living-docs`;**@purpose 由 commit 时棘轮门强制(supervisor 不改 src,消除"要补却禁改"的矛盾)**。

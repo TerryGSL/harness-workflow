@@ -20,7 +20,8 @@ fi
 fail=0
 
 # 1. Hook files must still exist at HEAD (a commit cannot quietly remove the gate).
-for f in .githooks/pre-commit .githooks/commit-msg .githooks/pre-push scripts/verify-memory.sh scripts/gate-lib.sh; do
+for f in .githooks/pre-commit .githooks/commit-msg .githooks/pre-push scripts/verify-memory.sh scripts/gate-lib.sh \
+         scripts/verify-purpose.sh scripts/verify-living-docs.sh scripts/gen-architecture-summary.mjs scripts/verify-doc-sprawl.sh; do
   git cat-file -e "${HEAD}:$f" 2>/dev/null || { echo "✗ ci-gate：HEAD 缺少必需文件：$f"; fail=1; }
 done
 
@@ -87,11 +88,12 @@ if [ -x "$DIR/classify-risk.sh" ] && [ -n "$BASE" ] && git rev-parse -q --verify
 fi
 
 # 5. code-map 同步(服务端不可绕):重生成 docs/code-map.json,与已提交内容有差=漂了。
+#    pre-commit 用 --fix 自动保鲜;这里严格校验,抓「绕过 hook / 手改 src 没重生成」。
 if [ -x "$DIR/verify-code-map.sh" ]; then
   ( cd "$(git rev-parse --show-toplevel)" && bash scripts/verify-code-map.sh ) || fail=1
 fi
 
-# 6. 文档保鲜(服务端不可绕):纸面承诺死链/locale 漂移/生成产物缺失。
+# 6. 文档保鲜(服务端不可绕):死链(纸面承诺指向不存在文件)/locale 漂移/生成文档过期。
 if [ -x "$DIR/verify-doc-freshness.sh" ]; then
   ( cd "$(git rev-parse --show-toplevel)" && bash scripts/verify-doc-freshness.sh ) || fail=1
 fi
@@ -99,6 +101,39 @@ fi
 # 7. 入口文件行数治理(单一规则源,与 pre-commit 同调)。CI 已 checkout,直接对工作树跑。
 if [ -x "$DIR/verify-governance.sh" ]; then
   ( cd "$(git rev-parse --show-toplevel)" && bash scripts/verify-governance.sh ) || fail=1
+fi
+
+# 8. claude-mem 注入不得入库(根治 AGENTS.md/CLAUDE.md 污染)。pre-commit 从 index 剥离,这里抓绕过。
+for f in AGENTS.md CLAUDE.md; do
+  if git show "${HEAD}:$f" 2>/dev/null | grep -qF '<claude-mem-context>'; then
+    echo "✗ ci-gate：${f} 含 claude-mem 注入块(<claude-mem-context>)，不得入库(应由 strip-mem-injection 剥离)"; fail=1
+  fi
+done
+
+# 9. @purpose 棘轮门(服务端严格):边界文件缺职责数不得高于基准。抓"绕过 hook 加了无 @purpose 的边界文件"。
+if [ -x "$DIR/verify-purpose.sh" ]; then
+  ( cd "$(git rev-parse --show-toplevel)" && bash scripts/verify-purpose.sh ) || fail=1
+fi
+
+# 10. 架构摘要同步(服务端不可绕):重生成 docs/ARCHITECTURE.md,与已提交内容有差=漂了(手改或没重生成)。
+if [ -f "$DIR/gen-architecture-summary.mjs" ] && command -v node >/dev/null 2>&1; then
+  ( cd "$(git rev-parse --show-toplevel)"
+    { [ -d src ] && [ -f docs/code-map.json ]; } || exit 0   # 无 src/无 code-map = 不需要架构摘要(codex P1)
+    [ -f docs/ARCHITECTURE.md ] || { echo "✗ ci-gate：缺 docs/ARCHITECTURE.md(跑 node scripts/gen-architecture-summary.mjs)"; exit 1; }
+    tmp=$(mktemp) || exit 1
+    if ARCH_OUT="$tmp" node scripts/gen-architecture-summary.mjs 2>/dev/null && cmp -s "$tmp" docs/ARCHITECTURE.md; then rm -f "$tmp"
+    else rm -f "$tmp"; echo "✗ ci-gate：docs/ARCHITECTURE.md 过期:src/@purpose 变了但没重生成。跑 node scripts/gen-architecture-summary.mjs"; exit 1; fi
+  ) || fail=1
+fi
+
+# 11. living 文档新鲜度(服务端严格):living 必须注册合同 + 不得落后触发源过多提交。
+if [ -x "$DIR/verify-living-docs.sh" ]; then
+  ( cd "$(git rev-parse --show-toplevel)" && bash scripts/verify-living-docs.sh check ) || fail=1
+fi
+
+# 12. 文档泛滥防复发(服务端严格):根层非白名单 *.md → fail。
+if [ -x "$DIR/verify-doc-sprawl.sh" ]; then
+  ( cd "$(git rev-parse --show-toplevel)" && bash scripts/verify-doc-sprawl.sh check ) || fail=1
 fi
 
 [ "$fail" -eq 0 ] && echo "ci-gate：通过"

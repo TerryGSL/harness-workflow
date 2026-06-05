@@ -23,22 +23,40 @@ copy_if_absent "$HW_SRC/templates/workflow-harness-gate.yml" ".github/workflows/
 mkdir -p docs/memory/cases docs/memory/decisions .harness/records
 # 沉淀层:change-index(JSONL,append 安全) + 跨需求稳定经验摘要
 [ -f .harness/change-index.jsonl ] || : > .harness/change-index.jsonl
-copy_if_absent "$HW_SRC/templates/memory-summary.md" "docs/memory/summary.md"
+# 文档自维护配置(user-owned,可改;不覆盖已有)。summary.md 不再手放——由 distill 机械生成(见末尾 seed)。
+copy_if_absent "$HW_SRC/templates/living-docs.json"     ".harness/living-docs.json"
+copy_if_absent "$HW_SRC/templates/code-map.config.json" ".harness/code-map.config.json"
+copy_if_absent "$HW_SRC/templates/claude-settings.json" ".claude/settings.json"
 # Intentionally NOT created (minimalism): WORK.md (opt-in, parallel only),
 # docs/memory/archive/ (lazy), .ai-mode (folded into AGENTS.md Mode line).
 
 # --- tool-owned scripts + hooks (refreshed each init) ---
 mkdir -p scripts .githooks
 for s in gate-lib.sh verify-memory.sh verify-evidence.sh verify-governance.sh ci-gate.sh doctor.sh state.sh brief.sh record.sh \
-         verify-code-map.sh verify-doc-freshness.sh distill-records.sh; do
+         verify-code-map.sh verify-doc-freshness.sh distill-records.sh \
+         verify-purpose.sh verify-living-docs.sh verify-doc-sprawl.sh \
+         strip-mem-injection.sh relocate-mem-injection.sh; do
   [ -f "$HW_SRC/scripts/$s" ] && cp "$HW_SRC/scripts/$s" "scripts/$s" || true
 done
-# 文档自维护:code-map 生成器(.mjs,需 node)
-[ -f "$HW_SRC/scripts/gen-code-map.mjs" ] && cp "$HW_SRC/scripts/gen-code-map.mjs" "scripts/gen-code-map.mjs" || true
-chmod +x scripts/*.sh scripts/gen-code-map.mjs 2>/dev/null || true
+# 文档自维护:生成器(.mjs,需 node)
+for m in gen-code-map.mjs gen-architecture-summary.mjs; do
+  [ -f "$HW_SRC/scripts/$m" ] && cp "$HW_SRC/scripts/$m" "scripts/$m" || true
+done
+chmod +x scripts/*.sh scripts/*.mjs 2>/dev/null || true
 for h in pre-commit commit-msg pre-push; do
   cp "$HW_SRC/githooks/$h" ".githooks/$h"; chmod +x ".githooks/$h"
 done
+
+# --- seed 生成物(让新仓一上来 code-map/架构/记忆索引/@purpose 基准就齐,门不空跑) ---
+if command -v node >/dev/null 2>&1; then
+  bash scripts/verify-code-map.sh --fix >/dev/null 2>&1 || true   # 生成 docs/code-map.json(无 src 会跳)
+  node scripts/gen-architecture-summary.mjs >/dev/null 2>&1 || true
+  bash scripts/verify-purpose.sh --fix   >/dev/null 2>&1 || true  # 建 .harness/purpose-baseline
+elif [ -d src ]; then
+  echo "⚠ 有 src/ 但未装 node —— code-map/ARCHITECTURE/@purpose 基准【没生成】,CI(装了 node)会 fail。"
+  echo "  装好 node 后重跑:bash $HW_SRC/init.sh(或手动 node scripts/gen-code-map.mjs && node scripts/gen-architecture-summary.mjs && bash scripts/verify-purpose.sh --fix)。"
+fi
+bash scripts/distill-records.sh >/dev/null 2>&1 || true           # 生成 records-index.md + summary.md(纯 shell,无需 node)
 
 # --- wire hooks without clobbering an existing hook manager ---
 existing=$(git config --local --get core.hooksPath 2>/dev/null || true)
