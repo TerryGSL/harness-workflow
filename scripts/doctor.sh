@@ -9,6 +9,7 @@ fail=0
 ok()   { echo "  ✓ $1"; }
 bad()  { echo "  ✗ $1"; fail=1; }
 warn() { echo "  ⚠ $1"; }
+info() { echo "  · $1"; }   # 中性提示,不计入缺项
 
 echo "harness-workflow 冷启动自检 @ $ROOT"
 
@@ -22,19 +23,25 @@ for f in .githooks/pre-commit .githooks/commit-msg .githooks/pre-push scripts/ve
   [ -f "$f" ] && ok "存在 $f" || bad "缺 $f"
 done
 
-# 3. hooks 是否激活(本地 git config,不随 clone 走——这里正是提醒点)
+# 3. hooks 是否激活(本地 git config,不随 clone 走——这里正是提醒点)。
+#    云端 gate 默认不装后,本地 hook 是默认且唯一的强制层 → 追踪"是否至少有一层在保护"。
+protected=0
 hp=$(git config --local --get core.hooksPath 2>/dev/null || true)
-if [ "$hp" = ".githooks" ]; then ok "core.hooksPath=.githooks(本地 hook 已激活)"
-else warn "core.hooksPath 未设为 .githooks —— 本 clone 的本地 hook 没激活,跑 init.sh 或 git config core.hooksPath .githooks(CI 仍兜底)"; fi
+if [ "$hp" = ".githooks" ]; then ok "core.hooksPath=.githooks(本地 hook 已激活)"; protected=1
+else warn "core.hooksPath 未设为 .githooks —— 本 clone 的本地 hook 没激活,跑 init.sh 或 git config core.hooksPath .githooks"; fi
 
 # 3b. husky 场景:harness 红线是否接进 .husky/(init 会自动接 commit-msg/pre-commit)
 if [ -d .husky ]; then
-  if grep -q 'harness-workflow' .husky/commit-msg 2>/dev/null; then ok "husky 已接入 harness 红线(.husky/commit-msg)"
+  if grep -q 'harness-workflow' .husky/commit-msg 2>/dev/null; then ok "husky 已接入 harness 红线(.husky/commit-msg)"; protected=1
   else warn "检测到 husky 但 harness 红线未接入 —— 跑 init.sh 自动接,或手动在 .husky/commit-msg 加 'bash .githooks/commit-msg \"\$@\"'"; fi
 fi
 
-# 4. CI 兜底存在(真正跨工具不变量)
-[ -f .github/workflows/harness-gate.yml ] && ok "CI 兜底 harness-gate.yml 存在" || warn "缺 .github/workflows/harness-gate.yml —— 跨工具/绕过 hook 的不变量缺失"
+# 4. 云端 CI gate 是【可选】兜底(默认不装,避免烧 Actions 额度)。装了就提示,没装不算缺项。
+if [ -f .github/workflows/harness-gate.yml ]; then ok "云端 CI gate 已装(harness-gate.yml,跨工具不可绕兜底)"; protected=1
+else info "云端 CI gate 未装(可选;默认不装省 Actions 额度。需服务端兜底:mkdir -p .github/workflows && cp templates/workflow-harness-gate.yml .github/workflows/harness-gate.yml)"; fi
+
+# 4b. 两层全无 = 这个 clone 完全不受 harness 保护(红线/证据门一个都不会触发)。这是真缺项,fail。
+[ "$protected" = 1 ] || bad "本 clone 既没激活本地 hook、也没装云端 gate —— harness 红线/证据门【完全不生效】。至少跑一次 init.sh(或 git config core.hooksPath .githooks)。"
 
 # 5. 入口行数治理通过
 if [ -x scripts/verify-governance.sh ]; then

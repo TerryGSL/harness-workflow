@@ -8,7 +8,7 @@ scaffolds_files() {
   local d; d=$(mktarget); run_init "$d"
   local ok=0
   for f in AGENTS.md CLAUDE.md docs/PROJECT.md docs/WORKFLOW.md .harness/state.json \
-           .aider.conf.yml .cursor/rules/harness.mdc .github/workflows/harness-gate.yml \
+           .aider.conf.yml .cursor/rules/harness.mdc \
            docs/memory/summary.md .harness/change-index.jsonl \
            scripts/gate-lib.sh scripts/verify-memory.sh scripts/verify-evidence.sh scripts/verify-governance.sh \
            scripts/ci-gate.sh scripts/doctor.sh scripts/state.sh scripts/record.sh \
@@ -24,6 +24,7 @@ omits_optional_files() {  # minimalism: init must NOT create these
   [ -e "$d/WORK.md" ] && ok=1
   [ -e "$d/.ai-mode" ] && ok=1
   [ -d "$d/docs/memory/archive" ] && ok=1
+  [ -e "$d/.github/workflows/harness-gate.yml" ] && ok=1  # 云端 gate 改为可选,init 默认不装
   rm -rf "$d"; return $ok
 }
 sets_hookspath() {

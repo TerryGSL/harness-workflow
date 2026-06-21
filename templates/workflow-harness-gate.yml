@@ -1,9 +1,17 @@
 name: harness-gate
 # Server-side invariant: the only layer that cannot be bypassed by --no-verify,
 # GUI merges, non-git tools, or fresh clones that never ran init.
+# 可选层,默认 init 不装(避免烧 Actions 额度)。触发已收窄到 PR + push 到 main ——
+# 只在"真正进主干"的节点校验,而非每个分支每次 push(那会把额度刷爆)。
 on:
-  push:
   pull_request:
+  push:
+    branches: [main]
+
+# 同一分支/PR 连续推送时,取消还在跑的旧 run —— 进一步省额度。
+concurrency:
+  group: harness-gate-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   gate:

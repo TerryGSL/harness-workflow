@@ -1,9 +1,9 @@
 {
-  "currentTask": "20260601-state自动同步",
+  "currentTask": "20260621-stop-auto-install-cloud-ci",
   "taskType": "feature",
-  "currentStage": "done",
+  "currentStage": "in_progress",
   "plan": null,
   "lastGate": "record done: 20260601-harness接入完善",
   "round": 0,
-  "updatedAt": "2026-06-01T16:21:23"
+  "updatedAt": "2026-06-21T14:31:40"
 }

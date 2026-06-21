@@ -29,13 +29,15 @@ bash install.sh --name X   # 装成别名, 不动旧的
 ```
 整个 repo 就是这套 skill(`SKILL.md` 在根 + `scripts/` `githooks/` `templates/` `init.sh` `install.sh`)，装进 `~/.claude/skills/harness-workflow` 后里面能看到完整一套。其中 SKILL.md 是"大脑"(全局调度)，`scripts/githooks/templates` 是"身体",由 `init.sh` 复制进每个项目当护栏——大脑通用、护栏随 repo。
 
-## 强制是怎么生效的（两层，对各自都说实话）
-1. **客户端 git hooks** —— 本地快速摩擦。在*这个 clone* 里对任何 commit 的工具生效。
+## 强制是怎么生效的（默认本地一层，云端兜底可选）
+1. **客户端 git hooks** —— 默认就这层,本地快速摩擦。在*这个 clone* 里对任何 commit 的工具生效。
    注意：`core.hooksPath` 是**本地 git config**，**不随 clone 走**，`--no-verify` / GUI 合并能绕过。
    每个 clone 要跑一次 `init.sh`（或 `git config core.hooksPath .githooks`）才激活本地 hook。
-2. **CI（`.github/workflows/harness-gate.yml`）** —— 真正不可绕过的不变量。
-   服务端对每次 push/PR 重新校验 memory 规则、密钥规则、hook 文件是否还在，
-   不管什么工具、clone、`--no-verify`。**所以你必须 commit + push 这套脚手架**——这才让规则在哪都生效。
+   单人开发本地这层已够 —— 红线（密钥/不推 main）+ 证据门（memory/Harness-Type）都在。
+2. **CI（`.github/workflows/harness-gate.yml`）—— 可选的服务端兜底，默认不装。**
+   它是唯一绕不过 `--no-verify`/GUI 合并/没跑 init 的 clone 的层,但 `on: push/pull_request`
+   会在每次推送跑 GitHub Actions、**烧额度**。多人/多工具/用 PR 流时才需要;要装手动:
+   `mkdir -p .github/workflows && cp templates/workflow-harness-gate.yml .github/workflows/harness-gate.yml`（模版已收窄到 PR + push main）。
 
 ## 你会得到（默认）
 - `AGENTS.md`（≤60 行，可检查约束 + Mode 行）· `CLAUDE.md`（3 行 stub）
@@ -44,7 +46,7 @@ bash install.sh --name X   # 装成别名, 不动旧的
 - **文档自维护**：`scripts/gen-code-map.mjs`（扫 src/ 出 `docs/code-map.json` 事实地图）· `scripts/distill-records.sh`（records→`docs/memory/records-index.md`）· `scripts/verify-{code-map,doc-freshness}.sh`
 - 跨工具指针：`.aider.conf.yml` · `.cursor/rules/harness.mdc`
 - git hooks：pre-commit（密钥 + **code-map 自动保鲜**）· commit-msg（memory + 证据门）· pre-push（不推 main + 测试 + **风险分级** + force-push 确认）
-- CI：`.github/workflows/harness-gate.yml`（服务端不可绕；HIGH 推送要 `Risk-Ack:`；+ **code-map 漂移 / 文档保鲜门**）
+- CI（**可选,默认不装**）：`templates/workflow-harness-gate.yml`（服务端不可绕兜底；HIGH 推送要 `Risk-Ack:`；+ **code-map 漂移 / 文档保鲜门**。手动 `mkdir -p .github/workflows && cp` 进去才生效）
 
 ## 文档不变死文件（doc-status + 机械门，过漂移测试）
 死文件的根因:门只保证「代码证据 + 每任务 record」,没机制对「活文档(架构图/记忆/设计)」负责。修法**全是护栏,不是提示**:
