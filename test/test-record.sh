@@ -33,7 +33,7 @@ done_passes_filled_and_appends_index() {
   local id; id=$(bash "$R" start bug y)
   local f=".harness/records/$id.md"
   # 填段落:把所有 <TODO> 换成实际内容
-  python3 -c 'import sys;p=sys.argv[1];s=open(p,encoding="utf-8").read().replace("<TODO>","实际内容");open(p,"w",encoding="utf-8").write(s)' "$f"
+  python3 -c 'import sys;p=sys.argv[1];s=open(p,encoding="utf-8").read().replace("<TODO>","实际内容").replace("## Decisions（非显然取舍）\n-","## Decisions（非显然取舍）\n无额外取舍");open(p,"w",encoding="utf-8").write(s)' "$f"
   bash "$R" done "$id"; local rc=$?
   local idx_ok=1; [ -f .harness/change-index.jsonl ] && grep -q "$id" .harness/change-index.jsonl && idx_ok=0
   cd - >/dev/null; rm -rf "$d"

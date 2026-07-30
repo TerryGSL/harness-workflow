@@ -19,7 +19,7 @@ for f in AGENTS.md CLAUDE.md docs/WORKFLOW.md docs/PROJECT.md; do
 done
 
 # 2. hooks 三件 + scripts
-for f in .githooks/pre-commit .githooks/commit-msg .githooks/pre-push scripts/verify-memory.sh scripts/gate-lib.sh; do
+for f in .githooks/pre-commit .githooks/commit-msg .githooks/pre-push scripts/verify-memory.sh scripts/verify-github-workflows.sh scripts/gate-lib.sh; do
   [ -f "$f" ] && ok "存在 $f" || bad "缺 $f"
 done
 
@@ -36,9 +36,12 @@ if [ -d .husky ]; then
   else warn "检测到 husky 但 harness 红线未接入 —— 跑 init.sh 自动接,或手动在 .husky/commit-msg 加 'bash .githooks/commit-msg \"\$@\"'"; fi
 fi
 
-# 4. 云端 CI gate 是【可选】兜底(默认不装,避免烧 Actions 额度)。装了就提示,没装不算缺项。
-if [ -f .github/workflows/harness-gate.yml ]; then ok "云端 CI gate 已装(harness-gate.yml,跨工具不可绕兜底)"; protected=1
-else info "云端 CI gate 未装(可选;默认不装省 Actions 额度。需服务端兜底:mkdir -p .github/workflows && cp templates/workflow-harness-gate.yml .github/workflows/harness-gate.yml)"; fi
+# 4. Harness 不生成云端 workflow。发现现存 Actions 时只提示，不自动安装、修复或删除。
+if find .github/workflows -maxdepth 1 -type f -print -quit 2>/dev/null | grep -q .; then
+  info "检测到仓库已有 GitHub Actions；它们不是 harness 生成物，推送前需审计触发器。"
+else
+  ok "GitHub Actions opt-in：harness 未创建 workflow"
+fi
 
 # 4b. 两层全无 = 这个 clone 完全不受 harness 保护(红线/证据门一个都不会触发)。这是真缺项,fail。
 [ "$protected" = 1 ] || bad "本 clone 既没激活本地 hook、也没装云端 gate —— harness 红线/证据门【完全不生效】。至少跑一次 init.sh(或 git config core.hooksPath .githooks)。"

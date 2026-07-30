@@ -24,7 +24,9 @@ ci_blocks_code_without_memory() {
 }
 ci_passes_code_with_trailer() {
   local d; d=$(init_repo)
-  ( cd "$d" && mkdir -p src && echo x > src/a.ts && git add -A && git commit -q --no-verify -m $'feat: code\n\nHarness-Type: trivial\nMemory: none' )
+  ( cd "$d" && mkdir -p src && printf '/** @purpose test fixture */\nexport const x = 1;\n' > src/a.ts \
+    && bash "$INIT" >/dev/null 2>&1 \
+    && git add -A && git commit -q --no-verify -m $'feat: code\n\nHarness-Type: trivial\nMemory: none' )
   run_ci "$d"; local rc=$?; rm -rf "$d"; return $rc   # expect 0
 }
 ci_blocks_no_type() {

@@ -43,7 +43,7 @@ description: 持续开发工作流。代码任务(做/加/修/改/实现/重构/
 **degraded 不静默**:插件没装(codex/superpowers/claude-mem 缺)→ 该步手工做并**明说"降级了"**,不假装。
 
 ## 护栏(机械兜底)
-本地 git hooks(密钥/不推 main/memory/证据门)+ verify-governance(入口行数封顶);**可选** CI(ci-gate 服务端不可绕,默认不装——避免每次 push 烧 Actions 额度;多人/多工具/PR 流才手动装,见 README)。**流程可漂,红线和证据门越不过。** state.json 只是恢复缓存,门禁不读它。
+本地 git hooks(密钥/不推 main/memory/证据门)+ verify-governance(入口行数封顶)。**GitHub Actions 永远 opt-in**：harness 不创建/修改 `.github/workflows/*`；只有用户明确要求时才可一次性设置 `HARNESS_ALLOW_GITHUB_WORKFLOWS=1`，且 commit 必须带 `Workflow-Authorized: <授权说明>`。`ci-gate.sh` 是可显式调用的规则脚本，不附带 workflow。**流程可漂,红线和证据门越不过。** state.json 只是恢复缓存,门禁不读它。
 
 ## 文档自维护(治死文档,机械不靠自觉)
 **原则:烂不掉的交给机器(自动生成+lockfile 校验);讲"为什么"的贴着代码且窄范围。** 散文文档必漂,生成的事实图不漂。

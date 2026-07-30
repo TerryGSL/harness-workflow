@@ -3,5 +3,6 @@
 set -uo pipefail
 ROOT=$(git rev-parse --show-toplevel)
 [ -x "$ROOT/scripts/verify-memory.sh" ]   && { "$ROOT/scripts/verify-memory.sh" "$1"   || exit 1; }
+[ -f "$ROOT/scripts/verify-github-workflows.sh" ] && { bash "$ROOT/scripts/verify-github-workflows.sh" commit-msg "$1" || exit 1; }
 [ -x "$ROOT/scripts/verify-evidence.sh" ] && { "$ROOT/scripts/verify-evidence.sh" "$1" || exit 1; }
 exit 0

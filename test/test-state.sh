@@ -33,7 +33,7 @@ start_syncs_state() {   # record.sh start 自动把任务写进 state(机械,不
 done_syncs_state() {    # record.sh done 自动把阶段推进到 done
   local d; d=$(mktarget); cd "$d" || return 2
   local id; id=$(bash "$HW_ROOT/scripts/record.sh" start bug y)
-  python3 -c 'import sys;p=sys.argv[1];s=open(p,encoding="utf-8").read().replace("<TODO>","实际");open(p,"w",encoding="utf-8").write(s)' ".harness/records/$id.md"
+  python3 -c 'import sys;p=sys.argv[1];s=open(p,encoding="utf-8").read().replace("<TODO>","实际").replace("## Decisions（非显然取舍）\n-","## Decisions（非显然取舍）\n无额外取舍");open(p,"w",encoding="utf-8").write(s)' ".harness/records/$id.md"
   bash "$HW_ROOT/scripts/record.sh" done "$id" >/dev/null 2>&1
   local s; s=$(bash "$ST" get currentStage)
   cd - >/dev/null; rm -rf "$d"; [ "$s" = "done" ]

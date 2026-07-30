@@ -11,7 +11,7 @@ scaffolds_files() {
            .aider.conf.yml .cursor/rules/harness.mdc \
            docs/memory/summary.md .harness/change-index.jsonl \
            scripts/gate-lib.sh scripts/verify-memory.sh scripts/verify-evidence.sh scripts/verify-governance.sh \
-           scripts/ci-gate.sh scripts/doctor.sh scripts/state.sh scripts/record.sh \
+           scripts/ci-gate.sh scripts/doctor.sh scripts/state.sh scripts/record.sh scripts/verify-github-workflows.sh \
            .githooks/pre-commit .githooks/commit-msg .githooks/pre-push; do
     [ -e "$d/$f" ] || { echo "missing $f" >&2; ok=1; }
   done
@@ -24,7 +24,7 @@ omits_optional_files() {  # minimalism: init must NOT create these
   [ -e "$d/WORK.md" ] && ok=1
   [ -e "$d/.ai-mode" ] && ok=1
   [ -d "$d/docs/memory/archive" ] && ok=1
-  [ -e "$d/.github/workflows/harness-gate.yml" ] && ok=1  # 云端 gate 改为可选,init 默认不装
+  [ -d "$d/.github" ] && ok=1  # harness 不能创建任何 GitHub Actions 入口
   rm -rf "$d"; return $ok
 }
 sets_hookspath() {
@@ -71,7 +71,7 @@ husky_not_hijacked() {  # 有 .husky 但 hooksPath 指别处(.myhooks) → 不�
   rm -rf "$d"; return $rc
 }
 assert "init scaffolds all files + memory dirs" scaffolds_files
-assert "init omits optional files (WORK/.ai-mode/archive)" omits_optional_files
+assert "init omits optional files and all GitHub Actions paths" omits_optional_files
 assert "init sets core.hooksPath=.githooks on clean repo" sets_hookspath
 assert "init does NOT clobber an existing core.hooksPath" does_not_clobber_existing_hookspath
 assert "init is idempotent (keeps user edits)" is_idempotent

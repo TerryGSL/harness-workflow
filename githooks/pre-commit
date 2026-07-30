@@ -6,6 +6,12 @@ SECRET_RE='(^|/)\.env($|\.)|(^|/)secrets?/'   # conservative fallback if lib mis
 [ -r "$ROOT/scripts/gate-lib.sh" ] && . "$ROOT/scripts/gate-lib.sh"
 
 staged=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
+
+# GitHub Actions 必须显式 opt-in：默认禁止 harness/agent 顺手创建或修改 workflow。
+if [ -f "$ROOT/scripts/verify-github-workflows.sh" ]; then
+  bash "$ROOT/scripts/verify-github-workflows.sh" staged || exit 1
+fi
+
 blocked=$(printf '%s\n' "$staged" | grep -E "$SECRET_RE" | grep -vE '\.(example|template|sample|dist)$' || true)
 if [ -n "$blocked" ]; then
   echo "✗ pre-commit：拒绝提交密钥/凭证文件：" >&2

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # init.sh — idempotently scaffold harness-workflow into the current git repo.
-# Templates are user-owned (skip if present); scripts/hooks/CI are tool-owned (refreshed).
+# Templates are user-owned (skip if present); scripts/hooks are tool-owned (refreshed).
 set -euo pipefail
 HW_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -19,9 +19,9 @@ copy_if_absent "$HW_SRC/templates/WORKFLOW.md" "docs/WORKFLOW.md"
 copy_if_absent "$HW_SRC/templates/state.json.tmpl" ".harness/state.json"
 copy_if_absent "$HW_SRC/templates/aider.conf.yml"  ".aider.conf.yml"
 copy_if_absent "$HW_SRC/templates/cursor-harness.mdc" ".cursor/rules/harness.mdc"
-# 云端 CI gate 改为【可选】,默认不装 —— 避免在每次 push 上跑 GitHub Actions 烧额度。
-# 本地 git hook 已做红线+证据门;需要"绕不过的服务端兜底"(多人/多工具/PR)时手动装:
-#   mkdir -p .github/workflows && cp "$HW_SRC/templates/workflow-harness-gate.yml" .github/workflows/harness-gate.yml
+# Harness 不创建、不修改 .github/workflows/*。所有证据门默认只在本地运行。
+# 如果用户明确要求某个 GitHub Actions 变更，必须使用一次性授权开关并写 commit trailer；
+# 详见 scripts/verify-github-workflows.sh。init 永远不会生成 workflow。
 mkdir -p docs/memory/cases docs/memory/decisions .harness/records
 # 沉淀层:change-index(JSONL,append 安全) + 跨需求稳定经验摘要
 [ -f .harness/change-index.jsonl ] || : > .harness/change-index.jsonl
@@ -37,7 +37,7 @@ mkdir -p scripts .githooks
 for s in gate-lib.sh verify-memory.sh verify-evidence.sh verify-governance.sh ci-gate.sh doctor.sh state.sh brief.sh record.sh \
          verify-code-map.sh verify-doc-freshness.sh distill-records.sh \
          verify-purpose.sh verify-living-docs.sh verify-doc-sprawl.sh \
-         strip-mem-injection.sh relocate-mem-injection.sh; do
+         verify-github-workflows.sh strip-mem-injection.sh relocate-mem-injection.sh; do
   [ -f "$HW_SRC/scripts/$s" ] && cp "$HW_SRC/scripts/$s" "scripts/$s" || true
 done
 # 文档自维护:生成器(.mjs,需 node)
@@ -104,11 +104,9 @@ cat <<'EOF'
 harness-workflow 初始化完成。
   • 红线+证据门由本地 git hook 执行,只对【这个 clone】生效（core.hooksPath
     是本地 git config，不随 clone 传——每个 clone 要重跑 init.sh）。
-  • 云端 CI gate【默认不装】(避免烧 Actions 额度)。单人开发本地 hook 已够;
-    需要绕不过的服务端兜底(多人/多工具/PR)时再手动装:
-        mkdir -p .github/workflows && \
-        cp "<harness-workflow>/templates/workflow-harness-gate.yml" \
-           .github/workflows/harness-gate.yml
+  • harness 永远不会创建或修改 .github/workflows/*。GitHub Actions 变更默认被 hook 拒绝;
+    只有用户明确要求时，才可用一次性 HARNESS_ALLOW_GITHUB_WORKFLOWS=1 +
+    Workflow-Authorized: <授权说明> 留痕。
   • 进度就在 git log —— 没有状态文件要维护。
   • 干活流程看 docs/WORKFLOW.md。
   • 下一步：填 AGENTS.md 命令 + Mode 行（loose/strict），编辑 docs/PROJECT.md。

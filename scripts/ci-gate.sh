@@ -21,7 +21,7 @@ fail=0
 
 # 1. Hook files must still exist at HEAD (a commit cannot quietly remove the gate).
 for f in .githooks/pre-commit .githooks/commit-msg .githooks/pre-push scripts/verify-memory.sh scripts/gate-lib.sh \
-         scripts/verify-purpose.sh scripts/verify-living-docs.sh scripts/gen-architecture-summary.mjs scripts/verify-doc-sprawl.sh; do
+         scripts/verify-github-workflows.sh scripts/verify-purpose.sh scripts/verify-living-docs.sh scripts/gen-architecture-summary.mjs scripts/verify-doc-sprawl.sh; do
   git cat-file -e "${HEAD}:$f" 2>/dev/null || { echo "✗ ci-gate：HEAD 缺少必需文件：$f"; fail=1; }
 done
 
@@ -66,6 +66,11 @@ for c in $(git rev-list "$range" 2>/dev/null); do
       printf '%s\n' "$msg" | grep -qiE '^Behavior-Unchanged:[[:space:]]*(true|yes|是)' || { echo "✗ ci-gate：refactor commit ${c:0:8} 缺 Behavior-Unchanged"; fail=1; } ;;
   esac; fi
 done
+
+# 2.5 GitHub Actions 变更必须有明确、可审计的用户授权；抓住 --no-verify 绕过本地 hook 的提交。
+if [ -f "$DIR/verify-github-workflows.sh" ]; then
+  bash "$DIR/verify-github-workflows.sh" range "$BASE" "$HEAD" || fail=1
+fi
 
 # 3. No secret-like files tracked at HEAD.
 secrets=$(git ls-tree -r --name-only "$HEAD" 2>/dev/null | grep -E "$SECRET_RE" | grep -vE '\.(example|template|sample|dist)$' || true)

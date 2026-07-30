@@ -1,9 +1,9 @@
 {
-  "currentTask": "20260621-stop-auto-install-cloud-ci",
-  "taskType": "feature",
-  "currentStage": "in_progress",
+  "currentTask": "20260730-github-workflow-opt-in-guard",
+  "taskType": "bug",
+  "currentStage": "done",
   "plan": null,
-  "lastGate": "record done: 20260601-harness接入完善",
+  "lastGate": "record done: 20260730-github-workflow-opt-in-guard",
   "round": 0,
-  "updatedAt": "2026-06-21T14:31:40"
+  "updatedAt": "2026-07-30T10:35:52"
 }

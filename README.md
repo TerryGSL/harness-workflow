@@ -1,7 +1,7 @@
 <!-- doc-status: rules · owner: 人工 · 触发: skill 能力/护栏变更 -->
 # harness-workflow
 
-精简、工具无关的开发 harness：**几个 markdown 文件 + git hooks + CI + 一个流程层**。
+精简、工具无关的开发 harness：**几个 markdown 文件 + 本地 git hooks + 一个流程层**。
 红线由 git hooks 强制（所以对 Claude、Codex、Cursor、Aider 或人——任何会 commit 的东西都生效）。
 零运行时依赖。唯一的跨工具不变量就是 git-tracked 的 markdown。
 **没有靠自觉手动同步的状态文件**：进度就是 `git log`，memory 由 commit hook 钉死。
@@ -29,15 +29,15 @@ bash install.sh --name X   # 装成别名, 不动旧的
 ```
 整个 repo 就是这套 skill(`SKILL.md` 在根 + `scripts/` `githooks/` `templates/` `init.sh` `install.sh`)，装进 `~/.claude/skills/harness-workflow` 后里面能看到完整一套。其中 SKILL.md 是"大脑"(全局调度)，`scripts/githooks/templates` 是"身体",由 `init.sh` 复制进每个项目当护栏——大脑通用、护栏随 repo。
 
-## 强制是怎么生效的（默认本地一层，云端兜底可选）
+## 强制是怎么生效的（只使用本地护栏）
 1. **客户端 git hooks** —— 默认就这层,本地快速摩擦。在*这个 clone* 里对任何 commit 的工具生效。
    注意：`core.hooksPath` 是**本地 git config**，**不随 clone 走**，`--no-verify` / GUI 合并能绕过。
    每个 clone 要跑一次 `init.sh`（或 `git config core.hooksPath .githooks`）才激活本地 hook。
    单人开发本地这层已够 —— 红线（密钥/不推 main）+ 证据门（memory/Harness-Type）都在。
-2. **CI（`.github/workflows/harness-gate.yml`）—— 可选的服务端兜底，默认不装。**
-   它是唯一绕不过 `--no-verify`/GUI 合并/没跑 init 的 clone 的层,但 `on: push/pull_request`
-   会在每次推送跑 GitHub Actions、**烧额度**。多人/多工具/用 PR 流时才需要;要装手动:
-   `mkdir -p .github/workflows && cp templates/workflow-harness-gate.yml .github/workflows/harness-gate.yml`（模版已收窄到 PR + push main）。
+2. **GitHub Actions 明确不属于 harness 默认能力。** `init.sh` 不会创建、复制或修改
+   `.github/workflows/*`，模板仓库也不再提供 workflow 生成文件。任何 workflow 变更默认被 pre-commit 拒绝；
+   只有用户明确要求时，才允许一次性设置 `HARNESS_ALLOW_GITHUB_WORKFLOWS=1`，并在 commit 写
+   `Workflow-Authorized: <授权说明>`。`ci-gate.sh` 也会校验这条留痕，防止 `--no-verify` 静默绕过。
 
 ## 你会得到（默认）
 - `AGENTS.md`（≤60 行，可检查约束 + Mode 行）· `CLAUDE.md`（3 行 stub）
@@ -45,8 +45,8 @@ bash install.sh --name X   # 装成别名, 不动旧的
 - `docs/memory/{cases,decisions}/` + `summary.md`（稀疏人工层）
 - **文档自维护**：`scripts/gen-code-map.mjs`（扫 src/ 出 `docs/code-map.json` 事实地图）· `scripts/distill-records.sh`（records→`docs/memory/records-index.md`）· `scripts/verify-{code-map,doc-freshness}.sh`
 - 跨工具指针：`.aider.conf.yml` · `.cursor/rules/harness.mdc`
-- git hooks：pre-commit（密钥 + **code-map 自动保鲜**）· commit-msg（memory + 证据门）· pre-push（不推 main + 测试 + **风险分级** + force-push 确认）
-- CI（**可选,默认不装**）：`templates/workflow-harness-gate.yml`（服务端不可绕兜底；HIGH 推送要 `Risk-Ack:`；+ **code-map 漂移 / 文档保鲜门**。手动 `mkdir -p .github/workflows && cp` 进去才生效）
+- git hooks：pre-commit（密钥 + **GitHub workflow opt-in** + code-map 自动保鲜）· commit-msg（memory + workflow 授权留痕 + 证据门）· pre-push（不推 main + 测试 + **风险分级** + force-push 确认）
+- `scripts/ci-gate.sh`：供本地或已有 CI 系统显式调用的服务端规则脚本；harness 自己不会为它创建 GitHub Actions workflow。
 
 ## 文档不变死文件（doc-status + 机械门，过漂移测试）
 死文件的根因:门只保证「代码证据 + 每任务 record」,没机制对「活文档(架构图/记忆/设计)」负责。修法**全是护栏,不是提示**:
@@ -60,14 +60,14 @@ bash install.sh --name X   # 装成别名, 不动旧的
 
 ## 怎么做到换工具就能跑
 harness 长在 repo 里，不在工具配置里：`AGENTS.md`（Codex/Cursor/Aider 原生读——也铺了
-`.aider.conf.yml` 和 `.cursor/rules/harness.mdc`；Claude 经 `CLAUDE.md` stub）、hooks、CI workflow、`docs/`。
-换工具 → clone，跑一次 `init.sh` 装本地 hook；CI 早就在强制红线了。Claude 的 init skill 只用于第一次脚手架。
+`.aider.conf.yml` 和 `.cursor/rules/harness.mdc`；Claude 经 `CLAUDE.md` stub）、hooks、`docs/`。
+换工具 → clone，跑一次 `init.sh` 装本地 hook。Claude 的 init skill 只用于第一次脚手架。
 随时 `bash scripts/doctor.sh` 自检"换工具能否仅凭本 repo 冷启动接手"。
 
 ## 非目标（防退化绊线——伸手想加这些就停）
 没有 TS CLI。没有 profile。没有 17 contracts。没有 team-* agent。没有 8-stage 巨流程。
 没有 knowledge scanner。没有 JSON-schema 守门。没有 session orchestrator。没有运行时 memory 守护进程。
-没有状态文件（current.json/progress.md/STATE.json）。就是脚手架 + git hooks + CI + 一个轻量流程层。
+没有状态文件（current.json/progress.md/STATE.json）。就是脚手架 + 本地 git hooks + 一个轻量流程层。
 想要更多，见"何时升级回重型"。
 
 ## 持续开发工作流（router + 证据门）
