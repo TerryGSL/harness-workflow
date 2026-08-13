@@ -2,3 +2,4 @@
 {"id": "20260601-state自动同步", "type": "feature", "oneliner": "治用户痛点:每轮 state.json 全 null、架构文档不同步——因为它们是 advisory(靠\"记得做\")。"}
 {"id": "20260601-harness接入完善", "type": "feature", "oneliner": "补三个真缺口(用户质疑 + codex 讨论后):brainstorming 没接、claude-mem 没接、旧项目 husky 时客户端门不激活。"}
 {"id": "20260730-github-workflow-opt-in-guard", "type": "bug", "oneliner": "把 GitHub Actions 从“默认不安装”升级为“默认禁止修改”：harness 不再提供 workflow 生成入口，提交和 CI 都必须看到显式授权才能接受 `.github/workflows/*` 变更。"}
+{"id": "20260813-remove-superpowers-dependency", "type": "feature", "oneliner": "移除 harness-workflow 对 Superpowers 的所有运行时、文档和机械证据依赖。验收为活跃技能说明、模板、初始化提示、commit-msg 门、CI 门与测试均不再引用 Superpowers，也不再要求 `Brainstormed-by:` trailer；历史记录保持不变。"}

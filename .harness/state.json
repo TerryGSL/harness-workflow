@@ -1,9 +1,9 @@
 {
-  "currentTask": "20260730-github-workflow-opt-in-guard",
-  "taskType": "bug",
+  "currentTask": "20260813-remove-superpowers-dependency",
+  "taskType": "refactor",
   "currentStage": "done",
   "plan": null,
-  "lastGate": "record done: 20260730-github-workflow-opt-in-guard",
+  "lastGate": "record done: 20260813-remove-superpowers-dependency",
   "round": 0,
-  "updatedAt": "2026-07-30T10:35:52"
+  "updatedAt": "2026-08-13T10:21:58"
 }

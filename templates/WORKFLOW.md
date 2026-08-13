@@ -13,12 +13,12 @@
 ## 每档最关键的一条
 - **trivial** → 直接改 + 跑测试 + commit
 - **bug** → **先写一个会失败的测试**（证明抓对了）再修；连续 2 次修不好就停下找人
-- **feature** → 完整管线(Claude 由指挥家 skill 驱动;其它工具按此手动)：脑暴(superpowers:brainstorming)→ 计划(writing-plans)→ 分任务实现(subagent-driven-development)→ **独立审查(`/codex review`)** → 验证 → 记忆 → commit。别自己说没问题。
+- **feature** → 原生完整管线：明确边界与取舍 → 写计划 → 分任务实现 → **独立审查** → 定向验证 → 记录结论 → commit。不依赖外部流程插件。
 - **refactor** → 先固化测试锁住行为，小步改、每步全绿，不混功能变更
 
 ## 证据门（机械保证"按流程"——commit/CI 拒不合规）
 改代码的 commit 必须带 `Harness-Type: trivial|bug|feature|refactor`，并按类型带证据：
-bug→测试或 `No-Repro:`；feature→`Plan:`+`Reviewed-by:`+`Brainstormed-by:`；refactor→`Behavior-Unchanged: true`。回退提交豁免。
+bug→测试或 `No-Repro:`；feature→`Plan:`+`Reviewed-by:`；refactor→`Behavior-Unchanged: true`。回退提交豁免。
 （这才是"保证按流程"，不靠你读上面的提示。）
 
 ## degraded 不静默

@@ -31,6 +31,3 @@ RISK_CI_RE='^\.github/workflows/|(^|/)\.gitlab-ci\.yml$|(^|/)\.circleci/|(^|/)Je
 DOCS_ONLY_RE='\.(md|markdown|txt|rst|adoc)$|(^|/)docs/|(^|/)LICENSE($|\.)|(^|/)\.gitignore$'
 # HIGH 推送的显式确认 trailer(CI 不能问人，靠这个留痕)。
 RISK_ACK_RE='^Risk-Ack:[[:space:]]*[^[:space:]]+'
-# feature 设计来源 trailer:半机械化「脑暴先行」。只查存在不验质量(同 Reviewed-by),
-# 逃生口 none:<理由>(必须非空)。接手查 claude-mem 是「接手动作」,不在此处——见 SKILL 接手提示。
-BRAINSTORMED_RE='^Brainstormed-by:[[:space:]]*[^[:space:]]+'

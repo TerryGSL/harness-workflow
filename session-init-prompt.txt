@@ -2,10 +2,10 @@
 
 代码任务（做/加/修/改/实现/重构/修 bug/接入）→ 先 Skill(harness-workflow)，它按任务大小给推荐管线，不重造角色、不搞 contracts：
 - trivial（单文件/可一键 revert/不碰 schema 接口依赖）→ 直接改+测+commit
-- bug → superpowers:systematic-debugging → 先写会失败的测试 → 最小修复 → 回归
-- refactor → superpowers:test-driven-development 固化行为 → 小步全绿 → 不混功能
-- feature/大改 → superpowers:brainstorming → writing-plans → subagent-driven-development → codex review → verification → claude-mem 记忆 → commit
+- bug → 复现与定位 → 先写会失败的测试 → 最小修复 → 回归
+- refactor → 用测试固化行为 → 小步全绿 → 不混功能
+- feature/大改 → 明确边界与取舍 → 写计划 → 分任务实现 → 独立审查 → 定向验证 → 记录结论 → commit
 
-强制不靠自觉，靠机械门：commit 带 Harness-Type: + git hook/CI 查证据 artifact（feature 要 Plan+Reviewed-by:codex+Brainstormed-by；bug 要测试或 No-Repro；refactor 要 Behavior-Unchanged）。红线（密钥/不推 main/memory）由 git hooks + CI 兜死。未接入的项目先 bash <repo>/init.sh。
+不依赖任何外部开发流程插件。强制不靠自觉，靠机械门：commit 带 Harness-Type: + git hook/CI 查证据 artifact（feature 要 Plan+Reviewed-by:codex；bug 要测试或 No-Repro；refactor 要 Behavior-Unchanged）。红线（密钥/不推 main/memory）由 git hooks + CI 兜死。未接入的项目先 bash <repo>/init.sh。
 
 工具纪律：全局改动（CLAUDE.md/skill/hooks/settings）先 Skill(codex:rescue) 审；需用户确认调 AskUserQuestion；接手任务先查记忆（mem-search / claude-mem）。≥2 独立子任务可用 task-dispatcher 并行（非强制）。

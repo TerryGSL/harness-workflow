@@ -72,7 +72,7 @@ harness 长在 repo 里，不在工具配置里：`AGENTS.md`（Codex/Cursor/Aid
 
 ## 持续开发工作流（router + 证据门）
 代码任务交给指挥家 skill（`SKILL.md` 在 repo 根；整个 repo 就是这个 skill）：
-- **按大小路由**：trivial 直接做 / bug 走调试管线 / feature 走完整管线（脑暴→计划→分任务→codex 审→验证→记忆）/ refactor 行为保持。结构当**指南**。
+- **按大小路由**：trivial 直接做 / bug 复现定位后最小修复 / feature 走原生完整管线（边界与取舍→计划→分任务→独立审查→验证→记录）/ refactor 行为保持。不依赖外部流程插件。
 - **机械证据门 = "保证按流程"**：改代码的 commit 必须带 `Harness-Type:`，hook+CI 按类型查证据——bug 要测试 / feature 要 `Plan:`+`Reviewed-by:` / refactor 要 `Behavior-Unchanged:`。不合规 commit/CI 拒。**不靠模型自觉,靠机械门**。
 - **subagent 同步靠 artifacts**：`scripts/brief.sh` 给子 agent 自包含简报(state.json+git+memory)；子 agent 只回结论+证据；主 agent synthesize 后更新 state + commit。
 - **state.json = 自动同步的可删缓存**：`record.sh start/done` **自动写**它（currentTask/taskType/currentStage，不靠记得手动更新），`scripts/state.sh show/regen` 秒级恢复，门禁绝不读它（烂了能 regen，不会重演 current.json 死法）。
