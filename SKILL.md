@@ -5,11 +5,27 @@ description: 持续开发工作流。代码任务(做/加/修/改/实现/重构/
 
 # harness-workflow — router + 证据门
 
+## Codex 执行角色边界
+
+网站视觉/交互/文案等前端及 UI 修复按 [canonical 用户偏好](/Users/twelve/.codex/AGENTS.md#面向公网的网站交付) 经 agent-desk 交实际 Claude Code；下文通用 Sol 路由与工具缺失降级不覆盖此例外，既有单目录串行和证据门不变。
+
+- 顶层主控遇到代码任务时把实现、调试、构建、测试和修复交给 `sol_worker`；已被派发的 Sol 直接执行本 Skill，不再次派 Agent。
+- `luna_worker` 不承担代码生命周期。需要页面复现或真实页面验证时，由主控按同一目录串行安排原 `terra_worker` 复现 → Sol 修复 → 原 Terra 验证。
+- 固定角色不可用时先报告；只有 Sol 实际缺少必要执行工具且主控具备时，主控才可明确说明并接手精确限定的工具步骤，不得静默换模型或绕过权限。
+
 **怎么"保证按流程"**:不是靠你读这段(prose 会漂),是靠 **commit 带 `Harness-Type:` + git hook/CI 查证据 artifact**。下面是推荐怎么干,执行权在机械门。
+
+**一条底线**:开工前确认目标/范围/验收/风险;收尾报告改动/证据/未验证项/回滚。只读和可逆改动直接推进,高风险外部副作用在执行前确认。
+
+## 公网前端交付
+
+网站任务先读 [public-site-launch](/Users/twelve/.codex/skills/public-site-launch/SKILL.md)：把完整公开前端、已授权域名发布与真实功能接入分成里程碑。按当前里程碑收集证据，内部接入状态只进工程记录；完整前端先实现入口、表单、本地校验、步骤、选项、预览、载入、结果、返回与重试，后台未接时可直接使用示例/本地状态和演示成功态，无需另行确认内部原型；feature flags 只限制真实服务调用，不自动隐藏UI。演示证据不能冒充真实API、扣费/发送或云保存；涉及认证、资金或生产的必要检查仍适用于真实执行。
+
+网站视觉反馈与机械全绿分开，按[视觉验收](/Users/twelve/.codex/skills/public-site-launch/references/visual-acceptance.md)绑定本次产物/实际观察。既有安全逻辑未变时仅复验受影响部分；记录done不等于整个Goal完成，不能为新任务虚标未完成Goal或绕到新chat。
 
 ## 接手任务先做
 
-**先查记忆**(装了 claude-mem 就用):`mem-search` / query claude-mem 找"上次怎么做 / 踩过啥坑"(跨 session 对话记忆)→ `bash scripts/state.sh show`(秒级恢复;丢了 `regen`)→ 读 `.harness/change-index.jsonl`(渐进下钻)+ `docs/memory/` case·decision → 必要时 `git log --oneline -20`。未接入 → 先 `bash <repo>/init.sh`。
+**先查记忆**(装了 claude-mem 就用):`mem-search` / query claude-mem 找"上次怎么做 / 踩过啥坑"(跨 session 对话记忆)→ `bash scripts/state.sh show`(秒级恢复;丢了 `regen`)→ 读 `.harness/change-index.jsonl`(渐进下钻)+ `docs/memory/` case·decision → 必要时 `git log --oneline -20`。仅对需要接入 harness 的目标代码项目，未接入 → 先 `bash <repo>/init.sh`；全局规则/Skill 文档维护按现有仓库与实际范围裁剪，不为此初始化新项目、在 HOME 安装 hooks 或扩建仓库。
 
 > **记忆三层,各干各的,别当替代品**:claude-mem = 跨 session 对话 observation(插件自动记,接手时主动 query)· `.harness/records/` = 每需求沉淀(record.sh,git-tracked)· `docs/memory/` = case/decision(踩坑·架构取舍,git-tracked)。
 
@@ -32,15 +48,15 @@ description: 持续开发工作流。代码任务(做/加/修/改/实现/重构/
 - **trivial** → 无额外证据
 回退提交(`Revert`/`Rollback`)豁免。memory 仍由 commit-msg 门要求(`Memory:` 或 case)。
 
-## 任务板 + 多 agent 并行(都挂在 record.md 的 `## Tasks`)
+## 任务板 + 串行 Agent 交接(都挂在 record.md 的 `## Tasks`)
 - **任务板=record.md 的 `## Tasks`**:把需求拆成 `- [ ] N <任务>`;开发时用 Claude **TodoWrite** 做实时视图,做完一条就把 record.md 里勾成 `- [x]`(进度持久进 git,`bash scripts/record.sh tasks <id>` 看 X/N)。
-- **并行 subagent**(只在用户或上层指令允许时使用):每个 sub-agent **认领一条任务**,在该行标 `@owner wt=<worktree>`;各自 worktree、**文件不相交**(one file one owner,同文件必串行)。
+- **串行交接**:每条任务标明唯一 `@owner`;所有角色使用同一个项目目录，不创建 worktree、项目副本或伴生目录；同一文件或外部状态始终只有一个 owner。
 - **派发前(in)**:`bash scripts/brief.sh "<该任务>" "<文件边界>"` 生成自包含简报塞进 subagent prompt(含 state+近期 git+memory),零上下文也对齐。
 - **回收(out)**:sub-agent 只回 结论+证据(改了啥/测试/决策),不回脏中间态。
 - **同步(state)**:主 agent synthesize → 勾掉 record.md 对应 task + 必要时写 Decisions/decision → commit(带 `Harness-Record:<id>`,git 成共享真相)。
 
 ## 失败/降级
-阶段失败且 3 次内修不好 → `git restore` 本步(留前面成果)+ 记 case + 问用户。连续失败 ≥2 次停下。
+连续两次尝试没有新证据或实质进展时，先核原执行停止、保留有效diff/验证与复现，上报主控决定；不自动restore他人或混合WIP。代码/测试失败、有效finding不是模型调用失败，有进展的修复沿原负责人继续。
 **degraded 不静默**:可选工具没装(codex/claude-mem 缺)→ 该步用原生能力完成并**明说"降级了"**,不假装。
 
 ## 护栏(机械兜底)
